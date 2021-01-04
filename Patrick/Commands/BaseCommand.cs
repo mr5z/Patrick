@@ -11,9 +11,10 @@ namespace Patrick.Commands
         {
             Name = name;
         }
-        internal abstract Task<bool> PerformAction();
+        internal abstract Task<string> PerformAction(string? argument);
         public string Name { get; }
         public string? Description { get; set; }
-        public bool IsNative { get; protected set; }
+        public bool IsNative { get; protected set; } = true;
+        public string? Arguments { get; set; }
     }
 }

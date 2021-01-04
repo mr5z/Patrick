@@ -1,19 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Patrick.Services;
+using System;
 using System.Threading.Tasks;
 
 namespace Patrick.Commands
 {
     class LearnCommand : BaseCommand
     {
-        public LearnCommand() : base("learn")
+        private readonly ICommandStore commandStore;
+
+        public LearnCommand(ICommandStore commandStore) : base("learn")
         {
+            this.commandStore = commandStore;
+            Description = "Remembers the command you will teach it.";
         }
 
-        internal override Task<bool> PerformAction()
+        internal override Task<string> PerformAction(string? argument)
         {
-            throw new NotImplementedException();
+            Console.WriteLine("doing something...");
+            return Task.FromResult(string.Empty);
         }
     }
 }

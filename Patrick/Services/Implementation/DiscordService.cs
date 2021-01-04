@@ -9,13 +9,13 @@ namespace Patrick.Services.Implementation
     class DiscordService : IDiscordService
     {
         private readonly DiscordSocketClient client = new DiscordSocketClient();
-        private readonly ICommandStore commandStore;
         private readonly IAppConfigProvider configProvider;
+        private ICommandParser commandParser;
 
-        public DiscordService(ICommandStore commandStore, IAppConfigProvider configProvider)
+        public DiscordService(IAppConfigProvider configProvider, ICommandParser commandParser)
         {
-            this.commandStore = commandStore;
             this.configProvider = configProvider;
+            this.commandParser = commandParser;
             client.MessageReceived += Client_MessageReceived;
         }
 
@@ -26,16 +26,23 @@ namespace Patrick.Services.Implementation
             await client.StartAsync();
         }
 
-        private Task Client_MessageReceived(SocketMessage arg)
+        private async Task Client_MessageReceived(SocketMessage arg)
         {
             var message = arg.Content;
 
-            if (message.StartsWith(TriggerText))
-            {
-                message = message.Substring(0, TriggerText.Length);
-            }
+            Console.WriteLine(arg.Content);
 
-            return Task.CompletedTask;
+            if (!message.StartsWith(TriggerText))
+                return;
+
+            var command = await commandParser.Parse(message);
+            if (command != null)
+            {
+                var messageResponse = await command.PerformAction(command.Arguments);
+                Console.WriteLine(messageResponse);
+                var result = arg.Channel.SendMessageAsync(messageResponse);
+                var a = result;
+            }
         }
 
         public string TriggerText => configProvider.Configuration!.Discord!.TriggerText!;

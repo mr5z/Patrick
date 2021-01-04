@@ -1,7 +1,5 @@
 ﻿using Patrick.Commands;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,8 +7,10 @@ namespace Patrick.Services
 {
     interface ICommandStore
     {
-        Task<string?> AddCommand(CustomCommand command, CancellationToken cancellationToken = default);
-        Task<HashSet<CustomCommand>> GetCommands(CancellationToken cancellationToken = default);
+        Task<string?> AddCustomCommand(CustomCommand command, CancellationToken cancellationToken = default);
+        Task<Dictionary<string, BaseCommand>> GetCustomCommands(CancellationToken cancellationToken = default);
+        Task<Dictionary<string, BaseCommand>> GetAggregatedCommands(CancellationToken cancellationToken = default);
+        Task<HashSet<BaseCommand>> GetNativeCommands(CancellationToken cancellationToken = default);
         void ClearCommands();
     }
 }

@@ -12,7 +12,7 @@ namespace Patrick.Commands
             IsNative = false;
         }
 
-        internal override Task<bool> PerformAction()
+        internal override Task<string> PerformAction(string? argument)
         {
             throw new NotImplementedException();
         }

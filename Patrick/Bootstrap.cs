@@ -17,12 +17,15 @@ namespace Patrick
             var appConfig = await AppConfiguration.LoadFrom(stream);
             var configProvider = new AppConfigProvider(appConfig!);
 
-            var serviceProvider = new ServiceCollection()
+            var serviceCollection = new ServiceCollection();
+            var serviceProvider = serviceCollection
                 .AddLogging()
                 .AddSingleton<IRepository>(_ => new MonkeyCacheRepository("Patrick"))
-                .AddTransient<IAppConfigProvider>(_ => configProvider)
+                .AddSingleton<ICommandStore, CommandStore>()
+                .AddSingleton<IServiceCollection>(_ => serviceCollection)
+                .AddSingleton<IAppConfigProvider>(_ => configProvider)
                 .AddTransient<IDiscordService, DiscordService>()
-                .AddTransient<ICommandStore, CommandStore>()
+                .AddTransient<ICommandParser, CommandParser>()
                 .BuildServiceProvider();
 
             return serviceProvider!;
