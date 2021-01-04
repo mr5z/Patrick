@@ -18,7 +18,7 @@ namespace Patrick.Commands
         internal override Task<CommandResponse> PerformAction(User user)
         {
             commandStore.ClearCommands();
-            return Task.FromResult(new CommandResponse(Name, "All commands cleared!");
+            return Task.FromResult(new CommandResponse(Name, "All commands cleared!"));
         }
     }
 }
