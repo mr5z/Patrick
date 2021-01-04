@@ -1,20 +1,217 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using Patrick.Helpers;
+using Patrick.Models;
+using Patrick.Services;
+using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Patrick.Commands
 {
+	// TODO refactor this
     class CustomCommand : BaseCommand
     {
-        public CustomCommand(string name) : base(name)
+        enum Option { Alias, Type, Method, Content, Path }
+        enum ResponseType { Consume, Ignore }
+        enum Method { Get, Post }
+        enum ContentType { Json, Form, Multi }
+
+		private class OptionA
+        {
+			private readonly Dictionary<Option, string?> options;
+            public OptionA(Dictionary<Option, string?> options)
+            {
+				this.options = options;
+            }
+			public string? Alias => options[Option.Alias];
+			public string? JsonPath => options[Option.Path];
+			public ResponseType ResponseType => ParseResponseType(options[Option.Type]);
+			public Method Method => ParseMethod(options[Option.Method]);
+			public ContentType ContentType => ParseContentType(options[Option.Content]);
+		}
+
+		private readonly IHttpService? httpService;
+
+        public CustomCommand(IHttpService httpService) : this(string.Empty)
+        {
+			this.httpService = httpService;
+		}
+
+		public CustomCommand() : this(string.Empty)
+		{
+		}
+
+		public CustomCommand(string name) : base(name)
         {
             IsNative = false;
         }
 
-        internal override Task<string> PerformAction(string? argument)
+        internal override async Task<CommandResponse> PerformAction(User user)
         {
-            throw new NotImplementedException();
+            var oldComponents = OldArguments?.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            var api = oldComponents?.First();
+
+            if (string.IsNullOrEmpty(api))
+				return new CommandResponse(Name, OldArguments);
+
+            if (Uri.TryCreate(api, UriKind.Absolute, out var uri) &&
+                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                if (oldComponents!.Length > 1)
+                {
+                    var parameters = oldComponents.Last();
+					var options = ParseOptions(parameters);
+					var opt = new OptionA(options);
+					var argsCount = Regex.Matches(api, "({\\d+})").Count;
+
+                    if (user.MessageArgument != null)
+                    {
+						var param = HttpUtility.HtmlDecode(user.MessageArgument);
+						var args = param?.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+						args = CliHelper.CombineOption(args, ' ').ToArray();
+						if (args.Length != argsCount)
+							return new CommandResponse(Name, 
+								$"Args count mismatch. Expecting {argsCount}");
+
+						args = args.Select(HttpUtility.UrlEncode).ToArray();
+						api = HttpUtility.HtmlDecode(string.Format(api, args));
+
+						if (opt.Method == Method.Get && opt.ResponseType == ResponseType.Ignore)
+                        {
+							var alias = opt.Alias?.Trim();
+							return new CommandResponse(Name, 
+								string.IsNullOrEmpty(alias) ? api : $"[{alias}]({api})");
+						}
+
+						var timeout = TimeSpan.FromSeconds(10);
+						try
+                        {
+							var cts = new CancellationTokenSource(timeout);
+							var apiResponse = await Fetch(api, opt.Method, opt.ContentType, cts.Token);
+							var stringContent = apiResponse ?? "{}";
+							if (string.IsNullOrEmpty(opt.JsonPath))
+                            {
+								return new CommandResponse(Name, stringContent);
+							}
+							var obj = JObject.Parse(stringContent);
+							var response = obj.SelectToken(opt.JsonPath)?.ToString() ?? stringContent;
+							return new CommandResponse(Name, response);
+						}
+                        catch (OperationCanceledException)
+						{
+							return new CommandResponse(Name, "API timeout!");
+						}
+					}
+                }
+            }
+
+			return new CommandResponse(Name, OldArguments);
         }
-    }
+
+		private async Task<string?> Fetch(string api, Method method, ContentType contentType, CancellationToken cancellationToken)
+        {
+			var httpService = this.httpService!;
+
+			var components = api.Split('?', 2, StringSplitOptions.RemoveEmptyEntries);
+			var domain = components.First()!;
+			switch (method)
+            {
+				case Method.Post:
+                    {
+						switch (contentType)
+						{
+							case ContentType.Json:
+							default:
+								var d1 = components.Length > 1 ? QueryStringHelper.ToObject<object>(components.Last()) : null;
+								var r1 = await httpService.PostJson<object>(new Uri(domain), d1?.ToString(), cancellationToken!);
+								return r1?.ToString();
+							case ContentType.Form:
+								var d2 = components.Length > 1 ? QueryStringHelper.ToDictionary(components.Last()) : new Dictionary<string, string>();
+								var r2 = await httpService.PostUrlEncoded<object>(new Uri(domain), d2!, cancellationToken!);
+								return r2?.ToString();
+							case ContentType.Multi:
+								break;
+                        }
+                    }
+					break;
+				case Method.Get:
+				default:
+                    {
+						var r3 = await httpService.Get<object>(new Uri(domain), cancellationToken!);
+						return r3?.ToString();
+					}
+            }
+
+			return null;
+        }
+
+		private static Dictionary<Option, string?> ParseOptions(string text)
+		{
+			var dictionary = DefaultOptions();
+			var combinedOptions = CliHelper.CombineOption(text.Split(' ', StringSplitOptions.RemoveEmptyEntries), ' ');
+			var queue = new Queue<string?>(combinedOptions);
+			while (queue.Count > 0)
+			{
+				var entry = queue.Dequeue();
+				if (entry == "-t" || entry == "--type")
+					dictionary[Option.Type] = queue.Dequeue();
+				else if (entry == "-a" || entry == "--alias")
+					dictionary[Option.Alias] = queue.Dequeue();
+				else if (entry == "-m" || entry == "--method")
+					dictionary[Option.Method] = queue.Dequeue();
+				else if (entry == "-c" || entry == "--content")
+					dictionary[Option.Content] = queue.Dequeue();
+				else if (entry == "-p" || entry == "--path")
+					dictionary[Option.Path] = queue.Dequeue();
+			}
+			return dictionary;
+		}
+
+		private static ResponseType ParseResponseType(string? value)
+		{
+			return value switch
+			{
+				"process" => ResponseType.Consume,
+				"ignore" => ResponseType.Ignore,
+				_ => ResponseType.Ignore
+			};
+		}
+
+		private static Method ParseMethod(string? value)
+		{
+			return value switch
+			{
+				"get" => Method.Get,
+				"post" => Method.Post,
+				_ => Method.Get
+			};
+		}
+
+		private static ContentType ParseContentType(string? value)
+		{
+			return value switch
+			{
+				"json" => ContentType.Json,
+				"form" => ContentType.Form,
+				"multi" => ContentType.Multi,
+				_ => ContentType.Json
+			};
+		}
+
+		private static Dictionary<Option, string?> DefaultOptions()
+		{
+			return new Dictionary<Option, string?>
+			{
+				[Option.Alias] = null,
+				[Option.Type] = null,
+				[Option.Method] = null,
+				[Option.Content] = null,
+				[Option.Path] = null,
+			};
+		}
+	}
 }

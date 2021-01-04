@@ -1,50 +1,33 @@
-﻿using Patrick.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Patrick.Models;
+using Patrick.Services;
 using System.Threading.Tasks;
 
 namespace Patrick.Commands
 {
     class AboutCommand : BaseCommand
     {
-        private readonly ICommandStore commandStore;
         private readonly ICommandParser commandParser;
 
-        public AboutCommand(ICommandStore commandStore, ICommandParser commandParser) : base("about")
+        public AboutCommand(ICommandParser commandParser) : base("about")
         {
-            this.commandStore = commandStore;
             this.commandParser = commandParser;
 
-            Description = "Lists all the native commands";
+            Description = "This is a bot.";
+            Usage = $"To learn more about specific commands, type: !{Name} *[command_name]*";
+            UseEmbed = true;
         }
 
-        internal override async Task<string> PerformAction(string? argument)
+        internal override async Task<CommandResponse> PerformAction(User user)
         {
-            var nativeCommands = await commandStore.GetNativeCommands();
-            var messageResponse = string.Empty;
+            if (user.MessageArgument == null)
+                return new CommandResponse(Name, Information);
 
-            if (argument == null)
-            {
-                messageResponse = $@"
-My native commands are: `{string.Join(", ", nativeCommands.Select(e => e.Name))}`
-To learn about specific command, type `!about <command_name>`
-";
-            }
+            var command = await commandParser.Parse(user.MessageArgument, false);
+            if (command != null)
+                return new CommandResponse(command.Name, command.Information);
             else
-            {
-                var command = await commandParser.Parse(argument!, false);
-                if (command != null)
-                {
-                    messageResponse = $"{command.Description}";
-                }
-                else
-                {
-                    messageResponse = $"Cannot get description for argument {argument}";
-                }
-            }
-            return messageResponse;
+                return new CommandResponse(Name,
+                    $"Cannot get information for argument {user.MessageArgument}");
         }
     }
 }

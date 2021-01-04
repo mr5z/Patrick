@@ -1,6 +1,5 @@
 ﻿using Patrick.Commands;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -28,7 +27,13 @@ namespace Patrick.Services.Implementation
                 var command = aggregatedCommands[name];
                 if (component.Length > 1)
                 {
-                    command.Arguments = component.Last();
+                    if (string.IsNullOrEmpty(command.OldArguments))
+                        command.OldArguments = component.Last();
+                    command.NewArguments = component.Last();
+                }
+                else
+                {
+                    command.NewArguments = null;
                 }
                 return command;
             }

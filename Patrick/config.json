@@ -1,6 +1,11 @@
 {
 	"Discord": {
 		"Token": "Nzk1MzI4OTUyMTc1Njg5NzI4.X_Hxzg.foC6ARfizMUwVNBGha8lN_vC5rY",
-		"TriggerText": "!"
+		"TriggerText": "!",
+		"BotId": 795328952175689728,
+		"TypingDuration": 0.7,
+		"KnownChannels": [
+			784389174697394187
+		]
 	}
 }

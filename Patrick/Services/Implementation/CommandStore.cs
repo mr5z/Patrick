@@ -58,7 +58,12 @@ namespace Patrick.Services.Implementation
 
         public Task<string?> AddCustomCommand(CustomCommand command, CancellationToken cancellationToken)
         {
-            return repository.Add(command.Name, command, cancellationToken);
+            return repository.Add(CollectionName, command, cancellationToken);
+        }
+
+        public Task<bool> RemoveCustomCommand(CustomCommand command, CancellationToken cancellationToken)
+        {
+            return repository.Remove(CollectionName, command, cancellationToken);
         }
 
         public void ClearCommands()
@@ -66,9 +71,9 @@ namespace Patrick.Services.Implementation
             repository.Clear(CollectionName);
         }
 
-        public async Task<Dictionary<string, BaseCommand>> GetCustomCommands(CancellationToken cancellationToken)
+        public async Task<Dictionary<string, CustomCommand>> GetCustomCommands(CancellationToken cancellationToken)
         {
-            var list = await repository.GetList<BaseCommand>(CollectionName, cancellationToken);
+            var list = await repository.GetList<CustomCommand>(CollectionName, cancellationToken);
             return list.ToDictionary(e => e.Name, e => e);
         }
 
@@ -82,11 +87,12 @@ namespace Patrick.Services.Implementation
         {
             var customCommands = await GetCustomCommands(cancellationToken);
             var nativeCommands = await GetNativeCommands(cancellationToken);
-            foreach (var cmd in nativeCommands)
+            var aggregatedCommands = new Dictionary<string, BaseCommand>(nativeCommands.ToDictionary(e => e.Name, e => e));
+            foreach (var cmd in customCommands)
             {
-                customCommands[cmd.Name] = cmd;
+                aggregatedCommands[cmd.Key] = cmd.Value;
             }
-            return customCommands;
+            return aggregatedCommands;
         }
     }
 }

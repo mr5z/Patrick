@@ -10,8 +10,18 @@ namespace Patrick
         static async Task Main(string[] args)
         {
             var serviceProvider = await Bootstrap.Initialize(args);
-            var discordService = serviceProvider.GetService<IDiscordService>()!;
-            await discordService.Start();
+            var chatService = serviceProvider.GetService<IChatService>();
+
+            if (chatService != null)
+            {
+                await chatService.Start();
+            }
+            else
+            {
+                Console.WriteLine("Cannot instantiate ChatService! Quitting...");
+                Console.ReadKey();
+                return;
+            }
 
             while (true)
             {

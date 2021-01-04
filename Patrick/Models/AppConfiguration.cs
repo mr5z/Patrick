@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Patrick.Models
@@ -13,13 +11,7 @@ namespace Patrick.Models
         {
             return await JsonSerializer.DeserializeAsync<AppConfiguration>(stream);
         }
-
-        public Discord? Discord { get; set; }
-    }
-
-    public class Discord
-    {
-        public string? Token { get; set; }
-        public string? TriggerText { get; set; }
+        [JsonPropertyName("Discord")]
+        public DiscordModel? Discord { get; set; }
     }
 }

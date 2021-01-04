@@ -3,7 +3,6 @@ using Patrick.Models;
 using Patrick.Services;
 using Patrick.Services.Implementation;
 using Patrick.Services.Repositories;
-using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -15,16 +14,16 @@ namespace Patrick
         {
             var stream = File.OpenRead("config.json");
             var appConfig = await AppConfiguration.LoadFrom(stream);
-            var configProvider = new AppConfigProvider(appConfig!);
 
             var serviceCollection = new ServiceCollection();
             var serviceProvider = serviceCollection
                 .AddLogging()
                 .AddSingleton<IRepository>(_ => new MonkeyCacheRepository("Patrick"))
-                .AddSingleton<ICommandStore, CommandStore>()
+                .AddSingleton<IAppConfigProvider>(_ => new AppConfigProvider(appConfig!))
                 .AddSingleton<IServiceCollection>(_ => serviceCollection)
-                .AddSingleton<IAppConfigProvider>(_ => configProvider)
-                .AddTransient<IDiscordService, DiscordService>()
+                .AddSingleton<ICommandStore, CommandStore>()
+                .AddSingleton<IHttpService, HttpService>()
+                .AddTransient<IChatService, DiscordService>()
                 .AddTransient<ICommandParser, CommandParser>()
                 .BuildServiceProvider();
 

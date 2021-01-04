@@ -21,6 +21,14 @@ namespace Patrick.Services.Repositories
 			return null;
 		}
 
+		public async Task<bool> Remove<T>(string name, T value, CancellationToken cancellationToken)
+        {
+			var list = await GetList<T>(name, cancellationToken);
+			var result = list.Remove(value);
+			Barrel.Current.Add(name, list, Timeout.InfiniteTimeSpan);
+			return result;
+		}
+
 		public Task<HashSet<T>> GetList<T>(string name, CancellationToken cancellationToken)
 		{
 			var data = Barrel.Current.Get<HashSet<T>>(name);
