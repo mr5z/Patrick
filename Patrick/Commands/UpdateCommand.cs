@@ -105,34 +105,34 @@ namespace Patrick.Commands
                 };
             }
 
-            class Op<T>
-            {
-                public Dictionary<object, Optionally<T>> Options { get; set; } = new Dictionary<object, Optionally<T>>();
+            //class Op<T>
+            //{
+            //    public Dictionary<object, Optionally<T>> Options { get; set; } = new Dictionary<object, Optionally<T>>();
 
-                public void Add<TKey>(TKey key, Optionally<T> optionally)
-                {
-                    Options[key!] = optionally;
-                }
+            //    public void Add<TKey>(TKey key, Optionally<T> optionally)
+            //    {
+            //        Options[key!] = optionally;
+            //    }
 
-                private Dictionary<T, string?> ParseOptions(string text)
-                {
-                    var dictionary = new Dictionary<string, T?>();
-                    var combinedOptions = CliHelper.CombineOption(text.Split(' ', StringSplitOptions.RemoveEmptyEntries), ' ');
-                    var queue = new Queue<string?>(combinedOptions);
-                    while (queue.Count > 0)
-                    {
-                        var entry = queue.Dequeue();
-                        foreach(var option in Options)
-                        {
-                            if (option.Alias == entry || option.Name == entry)
-                                dictionary[option.Value] = option.Value;
-                        }
-                        if (entry == "-d" || entry == "--description")
-                            dictionary[Option.Description] = queue.Dequeue();
-                    }
-                    return dictionary;
-                }
-            }
+            //    private Dictionary<T, string?> ParseOptions(string text)
+            //    {
+            //        var dictionary = new Dictionary<string, T?>();
+            //        var combinedOptions = CliHelper.CombineOption(text.Split(' ', StringSplitOptions.RemoveEmptyEntries), ' ');
+            //        var queue = new Queue<string?>(combinedOptions);
+            //        while (queue.Count > 0)
+            //        {
+            //            var entry = queue.Dequeue();
+            //            foreach(var option in Options)
+            //            {
+            //                if (option.Alias == entry || option.Name == entry)
+            //                    dictionary[option.Value] = option.Value;
+            //            }
+            //            if (entry == "-d" || entry == "--description")
+            //                dictionary[Option.Description] = queue.Dequeue();
+            //        }
+            //        return dictionary;
+            //    }
+            //}
 
             class Optionally<TValue>
             {

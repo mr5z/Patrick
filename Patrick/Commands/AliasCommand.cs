@@ -21,6 +21,8 @@ namespace Patrick.Commands
                 return new CommandResponse(Name, "Argument is null.");
 
             var command = await commandParser.Parse(user.MessageArgument, false);
+
+            return new CommandResponse(Name, "");
         }
     }
 }

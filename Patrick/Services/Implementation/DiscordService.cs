@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Patrick.Commands;
 using Patrick.Enums;
 using Patrick.Models;
+using Patrick.Models.Implementation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,7 +62,11 @@ namespace Patrick.Services.Implementation
                 return;
 
             var cts = new CancellationTokenSource(TypingDuration);
-            await arg.Channel.TriggerTypingAsync(new RequestOptions { CancelToken = cts.Token });
+            try
+            {
+                await arg.Channel.TriggerTypingAsync(new RequestOptions { CancelToken = cts.Token });
+            }
+            catch (OperationCanceledException) { }
             var command = await ParseCommand(message);
             if (command != null)
             {
@@ -74,13 +79,15 @@ namespace Patrick.Services.Implementation
                     return;
                 }
 
-                var response = await command.PerformAction(new User(arg.Author.Id)
+                var user = new User(arg.Author.Id, new DiscordChannel(arg.Channel))
                 {
                     Fullname = arg.Author.Username,
                     MessageArgument = command.NewArguments,
                     Role = currentRole,
                     SessionId = arg.Channel.Id
-                });
+                };
+
+                var response = await command.PerformAction(user);
 
                 if (command.UseEmbed)
                 {

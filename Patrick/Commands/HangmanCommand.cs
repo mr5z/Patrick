@@ -140,8 +140,8 @@ To start playing, type `!{Name} begin`
             });
             var scoreboardText = string.Join('\n',
                 scoreList
-                    .OrderBy(e => e.Score)
-                    .Select(e => $"__{e.Name}__: **{e.Score:N0}** ({e.GuessCount}/{e.CorrectGuesses})")
+                    .OrderByDescending(e => e.Score)
+                    .Select((e, i) => $"{i + 1}.\t__{e.Name}__: **{e.Score:N0}** ({e.GuessCount}/{e.CorrectGuesses})")
             );
 
             return @$"

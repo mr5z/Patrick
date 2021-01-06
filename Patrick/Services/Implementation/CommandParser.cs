@@ -18,7 +18,7 @@ namespace Patrick.Services.Implementation
 
         public async Task<BaseCommand?> Parse(string text, bool hasTriggerText)
         {
-            var component = text.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            var component = text.Split(new char[] { ' ', '\n' }, 2, StringSplitOptions.RemoveEmptyEntries);
             var name = component.First();
             name = hasTriggerText ? name[TriggerText.Length..] : name;
             var command = await commandStore.FindCommand(name);
