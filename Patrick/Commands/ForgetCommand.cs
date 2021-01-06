@@ -1,4 +1,5 @@
-﻿using Patrick.Models;
+﻿using Patrick.Enums;
+using Patrick.Models;
 using Patrick.Services;
 using System.Threading.Tasks;
 
@@ -14,6 +15,7 @@ namespace Patrick.Commands
 
             Description = $"Forgets a custom command.";
             Usage = $"!{Name} `<command_name>`.";
+            RoleRequirement = Role.Remove;
         }
 
         internal override async Task<CommandResponse> PerformAction(User user)

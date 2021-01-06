@@ -37,18 +37,18 @@ namespace Patrick.Helpers
 
 		private static (int, string) FindPair(char token, char separator, int currentIndex, string[] textArray)
 		{
-			var builder = new StringBuilder(textArray[currentIndex] + separator);
+			var prem = textArray[currentIndex];
+			if (prem.StartsWith(token) && prem.EndsWith(token))
+				return (currentIndex, prem.Replace(token.ToString(), ""));
+
+            var builder = new StringBuilder(prem + separator);
 			var i = currentIndex + 1;
-			var prem = builder.ToString();
-			if (!prem.StartsWith(token) || !prem.EndsWith(token))
-            {
-				while (i < textArray.Length)
-				{
-					var endTxt = textArray[i++];
-					builder.Append(endTxt + separator);
-					if (endTxt.EndsWith(token))
-						break;
-				}
+			while (i < textArray.Length)
+			{
+				var endTxt = textArray[i++];
+				builder.Append(endTxt + separator);
+				if (endTxt.EndsWith(token))
+					break;
 			}
 			return (i - 1, builder.ToString().Replace(token.ToString(), "").Trim());
 		}

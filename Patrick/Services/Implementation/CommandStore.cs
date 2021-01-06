@@ -66,6 +66,11 @@ namespace Patrick.Services.Implementation
             return repository.Remove(CollectionName, command, cancellationToken);
         }
 
+        public Task<bool> UpdateCustomCommand(CustomCommand command, CancellationToken cancellationToken = default)
+        {
+            return repository.Update(CollectionName, command.Name, command, cancellationToken);
+        }
+
         public void ClearCommands()
         {
             repository.Clear(CollectionName);

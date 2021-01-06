@@ -2,6 +2,7 @@
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Patrick.Commands;
+using Patrick.Enums;
 using Patrick.Models;
 using System;
 using System.Collections.Generic;
@@ -29,7 +30,6 @@ namespace Patrick.Services.Implementation
             serviceCollection.AddTransient(typeof(CustomCommand));
             serviceProvider = serviceCollection.BuildServiceProvider();
             client.MessageReceived += Client_MessageReceived;
-
         }
 
         public async Task Start()
@@ -37,6 +37,7 @@ namespace Patrick.Services.Implementation
             var token = configProvider.Configuration.Discord!.Token!;
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
+            Console.WriteLine("I'm alive!");
             if (KnownChannels != null)
             {
                 foreach(var serverId in KnownChannels)
@@ -56,8 +57,6 @@ namespace Patrick.Services.Implementation
 
             var message = arg.Content;
 
-            Console.WriteLine(arg.Content);
-
             if (!message.StartsWith(TriggerText))
                 return;
 
@@ -66,32 +65,48 @@ namespace Patrick.Services.Implementation
             var command = await ParseCommand(message);
             if (command != null)
             {
-                var response = await command.PerformAction(new User
+                var currentRole = KnownUsers.Contains(arg.Author.Id) ? Role.FullAccess : Role.Read | Role.Write;
+
+                if (!currentRole.HasFlag(command.RoleRequirement))
+                {
+                    var result = await arg.Channel.SendMessageAsync(
+                        "Sorry, you don't have the required role to perform this command");
+                    return;
+                }
+
+                var response = await command.PerformAction(new User(arg.Author.Id)
                 {
                     Fullname = arg.Author.Username,
-                    MessageArgument = command.NewArguments
+                    MessageArgument = command.NewArguments,
+                    Role = currentRole,
+                    SessionId = arg.Channel.Id
                 });
-                Console.WriteLine(response.Message);
 
                 if (command.UseEmbed)
                 {
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = preferredColor,
-                        Description = response.Message
-                    }
-                    .WithTitle(response.CommandName)
-                    .Build();
+                    var embed = new EmbedBuilder
+                        { Color = preferredColor }
+                        .WithTitle($":key: **__{response.CommandName}__**")
+                        //.WithAuthor(response.CommandName, Icons["CommandIcon"])
+                        .WithDescription(response.Message)
+                        .Build();
                     var result = await arg.Channel.SendMessageAsync(embed: embed);
                 }
                 else
                 {
-                    var result = await arg.Channel.SendMessageAsync(response.Message);
+                    if (string.IsNullOrEmpty(response.Message))
+                    {
+                        var result = await arg.Channel.SendMessageAsync(RandomDefaultResponse());
+                    }
+                    else
+                    {
+                        var result = await arg.Channel.SendMessageAsync(response.Message);
+                    }
                 }
             }
             else
             {
-                var result = await arg.Channel.SendMessageAsync("...");
+                var result = await arg.Channel.SendMessageAsync(RandomDefaultResponse());
             }
         }
 
@@ -112,10 +127,24 @@ namespace Patrick.Services.Implementation
             return command;
         }
 
+        private readonly Random random = new Random();
+        private string RandomDefaultResponse()
+        {
+            var responses = new string[] {
+                "...",
+                "https://img.pngio.com/patrick-one-tooth-laugh-animated-gif-gifs-gifsoupcom-little-patrick-star-one-tooth-320_240.gif",
+                "https://i.kym-cdn.com/entries/icons/original/000/027/642/dumb.jpg"
+            };
+
+            return responses[random.Next(responses.Length)];
+        }
+
         private DiscordModel Discord => configProvider.Configuration!.Discord!;
         public ulong[]? KnownChannels => Discord.KnownChannels;
+        public ulong[]? KnownUsers => Discord.KnownUsers;
         public ulong BotId => Discord.BotId;
         public string TriggerText => Discord.TriggerText!;
+        public Dictionary<string, string> Icons => Discord.Icons!;
         public TimeSpan TypingDuration => TimeSpan.FromSeconds(Discord.TypingDuration);
     }
 }

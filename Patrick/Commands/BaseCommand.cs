@@ -1,4 +1,5 @@
-﻿using Patrick.Models;
+﻿using Patrick.Enums;
+using Patrick.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -17,12 +18,19 @@ namespace Patrick.Commands
         public string Name { get; set; }
         public string? Description { get; set; }
         public string? Usage { get; set; }
-        public string Information => $"**Description**: {Description}\n\n**Usage**: {Usage}\n\n**Author**: {Author ?? "Admin"}";
+        public string Information => @$"
+**Description**: {Description}
+
+**Usage**: {Usage}
+
+**Author**: {Author ?? "Admin"}
+";
         public bool IsNative { get; protected set; } = true;
         public string? OldArguments { get; set; }
         public string? NewArguments { get; set; }
         public string? Author { get; set; }
         public bool UseEmbed { get; set; }
+        public Role RoleRequirement { get; set; } = Role.Read;
 
         public override bool Equals(object? obj)
         {

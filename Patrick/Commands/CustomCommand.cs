@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Patrick.Helpers;
 using Patrick.Models;
 using Patrick.Services;
@@ -13,6 +14,7 @@ using System.Web;
 namespace Patrick.Commands
 {
 	// TODO refactor this
+	// this is a fucking mess!
     class CustomCommand : BaseCommand
     {
         enum Option { Alias, Type, Method, Content, Path }
@@ -52,8 +54,12 @@ namespace Patrick.Commands
 
         internal override async Task<CommandResponse> PerformAction(User user)
         {
-            var oldComponents = OldArguments?.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-            var api = oldComponents?.First();
+            var oldComponents = OldArguments!.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            var api = oldComponents!.First();
+			if (oldComponents?.Length <= 1)
+            {
+				oldComponents = new string[] { api, "-m get -t ignore" };
+            }
 
             if (string.IsNullOrEmpty(api))
 				return new CommandResponse(Name, OldArguments);
@@ -61,56 +67,74 @@ namespace Patrick.Commands
             if (Uri.TryCreate(api, UriKind.Absolute, out var uri) &&
                 (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
             {
-                if (oldComponents!.Length > 1)
+                var parameters = oldComponents.Last();
+				var options = ParseOptions(parameters);
+				var opt = new OptionA(options);
+				var argsCount = Regex.Matches(api, "({\\d+})").Count;
+
+				if (argsCount > 0 && user.MessageArgument == null)
+					return new CommandResponse(Name,
+						$"Args count mismatch. Expecting {argsCount}, found none.");
+
+				var param = HttpUtility.HtmlDecode(user.MessageArgument ?? string.Empty);
+				var args = param?.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+				args = CliHelper.CombineOption(args, ' ').ToArray();
+				if (args.Length != argsCount)
+					return new CommandResponse(Name, 
+						$"Args count mismatch. Expecting {argsCount}, found {args.Length}");
+
+				args = args.Select(HttpUtility.UrlEncode).ToArray();
+				api = HttpUtility.HtmlDecode(string.Format(api, args));
+
+				if (opt.Method == Method.Get && opt.ResponseType == ResponseType.Ignore)
                 {
-                    var parameters = oldComponents.Last();
-					var options = ParseOptions(parameters);
-					var opt = new OptionA(options);
-					var argsCount = Regex.Matches(api, "({\\d+})").Count;
+					var alias = opt.Alias?.Trim();
+					UseEmbed = !string.IsNullOrEmpty(alias);
+					return new CommandResponse(Name, 
+						string.IsNullOrEmpty(alias) ? api : $"[{alias}]({api})");
+				}
 
-                    if (user.MessageArgument != null)
+				var timeout = TimeSpan.FromSeconds(10);
+				try
+                {
+					var cts = new CancellationTokenSource(timeout);
+					var apiResponse = await Fetch(api, opt.Method, opt.ContentType, cts.Token);
+					var stringContent = apiResponse ?? "{}";
+					if (string.IsNullOrEmpty(opt.JsonPath))
                     {
-						var param = HttpUtility.HtmlDecode(user.MessageArgument);
-						var args = param?.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-						args = CliHelper.CombineOption(args, ' ').ToArray();
-						if (args.Length != argsCount)
-							return new CommandResponse(Name, 
-								$"Args count mismatch. Expecting {argsCount}");
-
-						args = args.Select(HttpUtility.UrlEncode).ToArray();
-						api = HttpUtility.HtmlDecode(string.Format(api, args));
-
-						if (opt.Method == Method.Get && opt.ResponseType == ResponseType.Ignore)
-                        {
-							var alias = opt.Alias?.Trim();
-							return new CommandResponse(Name, 
-								string.IsNullOrEmpty(alias) ? api : $"[{alias}]({api})");
-						}
-
-						var timeout = TimeSpan.FromSeconds(10);
-						try
-                        {
-							var cts = new CancellationTokenSource(timeout);
-							var apiResponse = await Fetch(api, opt.Method, opt.ContentType, cts.Token);
-							var stringContent = apiResponse ?? "{}";
-							if (string.IsNullOrEmpty(opt.JsonPath))
-                            {
-								return new CommandResponse(Name, stringContent);
-							}
-							var obj = JObject.Parse(stringContent);
-							var response = obj.SelectToken(opt.JsonPath)?.ToString() ?? stringContent;
-							return new CommandResponse(Name, response);
-						}
-                        catch (OperationCanceledException)
-						{
-							return new CommandResponse(Name, "API timeout!");
-						}
+						return new CommandResponse(Name, stringContent);
 					}
-                }
+
+					string? response = ExtractStringFrom(stringContent, opt.JsonPath);
+					return new CommandResponse(Name, response ?? stringContent);
+				}
+                catch (OperationCanceledException)
+				{
+					return new CommandResponse(Name, "API timeout!");
+				}
             }
 
 			return new CommandResponse(Name, OldArguments);
         }
+
+		private static string? ExtractStringFrom(string content, string jsonPath)
+        {
+			try
+			{
+				var obj = JObject.Parse(content);
+				return obj.SelectToken(jsonPath)?.ToString();
+			}
+			catch (JsonReaderException)
+			{
+				try
+				{
+					var arr = JArray.Parse(content);
+					return arr.SelectToken(jsonPath)?.ToString();
+				}
+				catch (JsonReaderException) { }
+			}
+			return null;
+		}
 
 		private async Task<string?> Fetch(string api, Method method, ContentType contentType, CancellationToken cancellationToken)
         {
@@ -141,8 +165,7 @@ namespace Patrick.Commands
 				case Method.Get:
 				default:
                     {
-						var r3 = await httpService.Get<object>(new Uri(domain), cancellationToken!);
-						return r3?.ToString();
+						return await httpService.GetString(new Uri(api), cancellationToken!);
 					}
             }
 
@@ -175,7 +198,7 @@ namespace Patrick.Commands
 		{
 			return value switch
 			{
-				"process" => ResponseType.Consume,
+				"consume" => ResponseType.Consume,
 				"ignore" => ResponseType.Ignore,
 				_ => ResponseType.Ignore
 			};

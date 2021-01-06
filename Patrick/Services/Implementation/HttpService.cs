@@ -12,42 +12,54 @@ namespace Patrick.Services.Implementation
 	{
 		private const string JsonContentType = "application/json";
 
-		private readonly HttpClient _httpClient = new HttpClient();
+		private readonly HttpClient httpClient = new HttpClient();
 
 		public HttpService() { }
-		public HttpService(Uri baseAddress) => _httpClient.BaseAddress = baseAddress;
+		public HttpService(Uri baseAddress) => httpClient.BaseAddress = baseAddress;
 
 		public Task<T?> Get<T>(string relativePath, CancellationToken cancellationToken) =>
 			Get<T>(new Uri(relativePath, UriKind.Relative), cancellationToken);
 
+		public Task<string?> GetString(string relativePath, CancellationToken cancellationToken) =>
+			GetString(new Uri(relativePath, UriKind.Relative), cancellationToken);
+
 		public Task<T?> PostJson<T>(string relativePath, object? data, CancellationToken cancellationToken) =>
 			PostJson<T?>(new Uri(relativePath, UriKind.Relative), data, cancellationToken);
 
-		public Task<T?> PostUrlEncoded<T>(string relativePath, IDictionary<string, string> data, CancellationToken cancellationToken) =>
+		public Task<T?> PostUrlEncoded<T>(string relativePath, IDictionary<string, string?> data, CancellationToken cancellationToken) =>
 			PostUrlEncoded<T?>(new Uri(relativePath, UriKind.Relative), data, cancellationToken);
 
 		public Task<T?> PostMultipart<T>(string relativePath, IDictionary<string, object> data, CancellationToken cancellationToken) =>
 			PostMultipart<T?>(new Uri(relativePath, UriKind.Relative), data, cancellationToken);
 
+		public Task<T?> PutForm<T>(string relativePath, IDictionary<string, string?> data, CancellationToken cancellationToken) =>
+			PutForm<T>(new Uri(relativePath, UriKind.Relative), data, cancellationToken);
+
 		public async Task<T?> Get<T>(Uri absolutePath, CancellationToken cancellationToken)
 		{
-			var response = await _httpClient.GetAsync(absolutePath, cancellationToken);
+			var response = await httpClient.GetAsync(absolutePath, cancellationToken);
 			var stream = await response.Content.ReadAsStreamAsync();
 			return await JsonSerializer.DeserializeAsync<T>(stream, cancellationToken: cancellationToken);
+		}
+
+		public async Task<string?> GetString(Uri absolutePath, CancellationToken cancellationToken)
+		{
+			var response = await httpClient.GetAsync(absolutePath, cancellationToken);
+			return await response.Content.ReadAsStringAsync();
 		}
 
 		public async Task<T?> PostJson<T>(Uri absolutePath, object? data, CancellationToken cancellationToken)
 		{
 			var content = ObjectToStringContent(data);
-			var response = await _httpClient.PostAsync(absolutePath, content, cancellationToken);
+			var response = await httpClient.PostAsync(absolutePath, content, cancellationToken);
 			var stream = await response.Content.ReadAsStreamAsync();
 			return await JsonSerializer.DeserializeAsync<T>(stream, cancellationToken: cancellationToken);
 		}
 
-		public async Task<T?> PostUrlEncoded<T>(Uri absolutePath, IDictionary<string, string> data, CancellationToken cancellationToken)
+		public async Task<T?> PostUrlEncoded<T>(Uri absolutePath, IDictionary<string, string?> data, CancellationToken cancellationToken)
 		{
 			var content = DictionaryToUrlEncodedContent(data);
-			var response = await _httpClient.PostAsync(absolutePath, content, cancellationToken);
+			var response = await httpClient.PostAsync(absolutePath, content, cancellationToken);
 			var stream = await response.Content.ReadAsStreamAsync();
 			return await JsonSerializer.DeserializeAsync<T>(stream, cancellationToken: cancellationToken);
 		}
@@ -55,9 +67,16 @@ namespace Patrick.Services.Implementation
 		public async Task<T?> PostMultipart<T>(Uri absolutePath, IDictionary<string, object> data, CancellationToken cancellationToken)
 		{
 			var content = DictionaryToMultipartContent(data);
-			var response = await _httpClient.PostAsync(absolutePath, content, cancellationToken);
+			var response = await httpClient.PostAsync(absolutePath, content, cancellationToken);
 			var stream = await response.Content.ReadAsStreamAsync();
 			return await JsonSerializer.DeserializeAsync<T>(stream, cancellationToken: cancellationToken);
+		}
+
+		public Task<HttpResponseMessage?> Send(Uri absolutePath, HttpMethod method, HttpContent data, CancellationToken cancellationToken)
+		{
+			var message = new HttpRequestMessage(method, absolutePath)
+			{ Content = data };
+			return httpClient.SendAsync(message, cancellationToken);
 		}
 
 		private static StringContent ObjectToStringContent(object? data)
@@ -66,7 +85,15 @@ namespace Patrick.Services.Implementation
 			return new StringContent(payload, Encoding.UTF8, JsonContentType);
 		}
 
-		private static FormUrlEncodedContent DictionaryToUrlEncodedContent(IDictionary<string, string> data) =>
+		public async Task<T?> PutForm<T>(Uri absolutePath, IDictionary<string, string?> data, CancellationToken cancellationToken)
+		{
+			var content = DictionaryToUrlEncodedContent(data);
+			var response = await httpClient.PutAsync(absolutePath, content, cancellationToken);
+			var stream = await response.Content.ReadAsStreamAsync();
+			return await JsonSerializer.DeserializeAsync<T>(stream, cancellationToken: cancellationToken);
+		}
+
+		private static FormUrlEncodedContent DictionaryToUrlEncodedContent(IDictionary<string, string?> data) =>
 			new FormUrlEncodedContent(data);
 
 		private static MultipartFormDataContent DictionaryToMultipartContent(IDictionary<string, object> data)
@@ -111,5 +138,5 @@ namespace Patrick.Services.Implementation
 			}
 			return content;
 		}
-	}
+    }
 }

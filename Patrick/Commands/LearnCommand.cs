@@ -1,4 +1,5 @@
-﻿using Patrick.Models;
+﻿using Patrick.Enums;
+using Patrick.Models;
 using Patrick.Services;
 using System;
 using System.Linq;
@@ -15,6 +16,7 @@ namespace Patrick.Commands
         {
             this.commandStore = commandStore;
             this.commandParser = commandParser;
+            RoleRequirement = Role.Write;
             Description = "Remembers the command you taught. It can also build a \"dynamic\" command.";
             Usage = @"
 - Pattern:
@@ -26,18 +28,18 @@ namespace Patrick.Commands
 For plain text format:
 - The next argument (separated by space) will just repeat by the bot.
 - Example:
-> (You) *`!learn hello world! 123`*
-> (Bot) *Learned the command `hello`*
-> (You) *!hello*
-> (Bot) *world! 123*
+> :face_with_raised_eyebrow: *`!learn hello world! 123`*
+> :robot: *Learned the command `hello`*
+> :face_with_raised_eyebrow: *!hello*
+> :robot: *world! 123*
 
 For URL format:
 - The succeeding argument is assummed to be a supplement to build the API.
 - The following can be use to construct the parameters:
-  • t/--type - Response type. Values can be either `ignore` or `consume`
-  • m/--method - Part of HTTP. Values can be either `get` or `post` atm
-  • c/--content - Is an HTTP header Content-Type. The values can be either of these three: `json`, `form`, `multi`
-  • p/--path - Is a JSON Path
+  • **-t** / **--type** - Response type. Values can be either `ignore` or `consume`
+  • **-m** / **--method** - Part of HTTP. Values can be either `get` or `post` atm
+  • **-c** / **--content** - Is an HTTP header Content-Type. The values can be either of these three: `json`, `form`, `multi`
+  • **-p** / **--path** - Is a JSON Path
 ";
         }
 

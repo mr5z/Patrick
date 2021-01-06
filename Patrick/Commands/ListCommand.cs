@@ -26,7 +26,7 @@ namespace Patrick.Commands
         {
             var nativeCommands = await commandStore.GetAggregatedCommands();
             var message = $"My native commands are: `{string.Join(", ", nativeCommands.Where(e => e.Value.IsNative).Select(e => e.Key))}`\n\n";
-            message += $"Current customs commands: `{string.Join(", ", nativeCommands.Where(e => !e.Value.IsNative).Select(e => e.Key))}`";
+            message += $"Current custom commands: `{string.Join(", ", nativeCommands.Where(e => !e.Value.IsNative).Select(e => e.Key))}`";
             return message;
         }
     }

@@ -1,4 +1,5 @@
-﻿using Patrick.Models;
+﻿using Patrick.Enums;
+using Patrick.Models;
 using Patrick.Services;
 using System.Threading.Tasks;
 
@@ -13,6 +14,7 @@ namespace Patrick.Commands
             this.commandStore = commandStore;
             Description = "Clears all custom commands";
             Usage = $"!{Name}";
+            RoleRequirement = Role.Remove;
         }
 
         internal override Task<CommandResponse> PerformAction(User user)
