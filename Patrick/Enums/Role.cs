@@ -7,7 +7,7 @@ namespace Patrick.Enums
     {
         Read = 1,
         Write = 2,
-        Remove = 4,
-        FullAccess = Read | Write | Remove
+        Delete = 4,
+        FullAccess = Read | Write | Delete
     }
 }

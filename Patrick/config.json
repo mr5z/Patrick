@@ -12,6 +12,7 @@
 		],
 		"Icons": {
 			"CommandIcon": "https://findicons.com/files/icons/127/sleek_xp_software/300/command_prompt.png"
-		}
+		},
+		"Test": "This is just a dummy property"
 	}
 }

@@ -14,7 +14,7 @@ namespace Patrick.Commands
             this.commandStore = commandStore;
             Description = "Clears all custom commands";
             Usage = $"!{Name}";
-            RoleRequirement = Role.Remove;
+            RoleRequirement = Role.Delete;
         }
 
         internal override Task<CommandResponse> PerformAction(User user)

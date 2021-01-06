@@ -21,10 +21,9 @@ namespace Patrick.Services.Implementation
             var component = text.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             var name = component.First();
             name = hasTriggerText ? name[TriggerText.Length..] : name;
-            var aggregatedCommands = await commandStore.GetAggregatedCommands();
-            if (aggregatedCommands.ContainsKey(name))
+            var command = await commandStore.FindCommand(name);
+            if (command != null)
             {
-                var command = aggregatedCommands[name];
                 if (component.Length > 1)
                 {
                     if (string.IsNullOrEmpty(command.OldArguments))

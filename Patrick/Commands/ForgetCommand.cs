@@ -15,18 +15,16 @@ namespace Patrick.Commands
 
             Description = $"Forgets a custom command.";
             Usage = $"!{Name} `<command_name>`.";
-            RoleRequirement = Role.Remove;
+            RoleRequirement = Role.Delete;
         }
 
         internal override async Task<CommandResponse> PerformAction(User user)
         {
             if (user.MessageArgument == null)
-            {
                 return new CommandResponse(Name, "Cannot process null argument");
-            }
 
-            var customCommands = await commandStore.GetCustomCommands();
-            if (customCommands.TryGetValue(user.MessageArgument, out var command))
+            var genericCommand = await commandStore.FindCommand(user.MessageArgument);
+            if (genericCommand is CustomCommand command)
             {
                 var result = await commandStore.RemoveCustomCommand(command);
                 if (result)

@@ -66,9 +66,19 @@ namespace Patrick.Services.Implementation
             return repository.Remove(CollectionName, command, cancellationToken);
         }
 
-        public Task<bool> UpdateCustomCommand(CustomCommand command, CancellationToken cancellationToken = default)
+        public Task<bool> UpdateCustomCommand(CustomCommand command, CancellationToken cancellationToken)
         {
             return repository.Update(CollectionName, command.Name, command, cancellationToken);
+        }
+
+        public async Task<BaseCommand?> FindCommand(string name, CancellationToken cancellationToken)
+        {
+            var commandList = await GetAggregatedCommands(cancellationToken);
+
+            if (commandList.TryGetValue(name, out var command))
+                return command;
+
+            return null;
         }
 
         public void ClearCommands()

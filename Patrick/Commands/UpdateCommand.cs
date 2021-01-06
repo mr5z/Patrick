@@ -1,4 +1,5 @@
-﻿using Patrick.Helpers;
+﻿using Patrick.Enums;
+using Patrick.Helpers;
 using Patrick.Models;
 using Patrick.Services;
 using System;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Patrick.Commands
 {
+    // TODO refactor this!
     class UpdateCommand : BaseCommand
     {
         private readonly ICommandStore commandStore;
@@ -15,6 +17,7 @@ namespace Patrick.Commands
         public UpdateCommand(ICommandStore commandStore) : base("update")
         {
             this.commandStore = commandStore;
+            RoleRequirement = Role.Write;
             Description = "Updates existing custom command's description and usage texts.";
             Usage = @$"
 !{Name} <command_name> -u 'New usage' -d 'New description'
@@ -30,8 +33,8 @@ namespace Patrick.Commands
                 return new CommandResponse(Name, "Missing argument.");
 
             var updater = Updater.Parse(user.MessageArgument);
-            var commandList = await commandStore.GetCustomCommands();
-            if (commandList.TryGetValue(updater.Name, out var command))
+            var genericCommand = await commandStore.FindCommand(updater.CommandName);
+            if (genericCommand is CustomCommand command)
             {
                 command.Description ??= updater.Description;
                 command.Usage ??= updater.Usage;
@@ -54,9 +57,9 @@ namespace Patrick.Commands
             }
             public Updater(string name)
             {
-                Name = name;
+                CommandName = name;
             }
-            public string Name { get; }
+            public string CommandName { get; }
             public string? Description { get; set; }
             public string? Usage { get; set; }
 
@@ -100,6 +103,47 @@ namespace Patrick.Commands
                     [Option.Usage] = null,
                     [Option.Description] = null
                 };
+            }
+
+            class Op<T>
+            {
+                public Dictionary<object, Optionally<T>> Options { get; set; } = new Dictionary<object, Optionally<T>>();
+
+                public void Add<TKey>(TKey key, Optionally<T> optionally)
+                {
+                    Options[key!] = optionally;
+                }
+
+                private Dictionary<T, string?> ParseOptions(string text)
+                {
+                    var dictionary = new Dictionary<string, T?>();
+                    var combinedOptions = CliHelper.CombineOption(text.Split(' ', StringSplitOptions.RemoveEmptyEntries), ' ');
+                    var queue = new Queue<string?>(combinedOptions);
+                    while (queue.Count > 0)
+                    {
+                        var entry = queue.Dequeue();
+                        foreach(var option in Options)
+                        {
+                            if (option.Alias == entry || option.Name == entry)
+                                dictionary[option.Value] = option.Value;
+                        }
+                        if (entry == "-d" || entry == "--description")
+                            dictionary[Option.Description] = queue.Dequeue();
+                    }
+                    return dictionary;
+                }
+            }
+
+            class Optionally<TValue>
+            {
+                public Optionally(string alias, string name)
+                {
+                    Alias = alias;
+                    Name = name;
+                }
+                public string Name { get; }
+                public string Alias { get; }
+                public TValue? Value { get; set; }
             }
         }
     }
