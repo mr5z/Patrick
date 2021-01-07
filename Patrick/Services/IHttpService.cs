@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Patrick.Services
 {
-	interface IHttpService
+    interface IHttpService
 	{
 		Task<T?> Get<T>(string relativePath, CancellationToken cancellationToken = default);
 		Task<T?> Get<T>(Uri absolutePath, CancellationToken cancellationToken = default);

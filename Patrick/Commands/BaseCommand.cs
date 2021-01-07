@@ -14,7 +14,7 @@ namespace Patrick.Commands
             Name = name;
         }
 
-        internal abstract Task<CommandResponse> PerformAction(User user);
+        internal abstract Task<CommandResponse> PerformAction(IUser user);
 
         public string Name { get; set; }
         public string? Description { get; set; }

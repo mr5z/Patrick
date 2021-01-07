@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Patrick.Services;
-using System.Threading.Tasks;
 using System;
+using System.Threading.Tasks;
 
 namespace Patrick
 {

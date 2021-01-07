@@ -2,6 +2,6 @@
 {
     interface IChannelMessage
     {
-        public ulong Id { get; }
+        ulong Id { get; }
     }
 }

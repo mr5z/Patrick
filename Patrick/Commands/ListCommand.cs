@@ -16,7 +16,7 @@ namespace Patrick.Commands
             Usage = $"!{Name}";
         }
 
-        internal override async Task<CommandResponse> PerformAction(User user)
+        internal override async Task<CommandResponse> PerformAction(IUser user)
         {
             var message = await GetMessage();
             return new CommandResponse(Name, message);

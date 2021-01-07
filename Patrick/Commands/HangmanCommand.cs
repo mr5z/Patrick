@@ -1,12 +1,10 @@
-﻿using Patrick.Extensions;
-using Patrick.Models;
+﻿using Patrick.Models;
 using Patrick.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -31,12 +29,13 @@ namespace Patrick.Commands
             Description = "[Hangman game.](https://en.wikipedia.org/wiki/Hangman_(game))";
             Usage = @$"
 To start playing, type `!{Name} begin`
-!{Name} <text>, where <text> may be either *begin* to start the game, *hint* to request for hints, or a letter to guess the current hangman word.
+!{Name} <text>, where <text> may be either *begin* to start the game, *hint* to request for hints, *surrender* to give up, or a letter to guess the current hangman word.
 ";
         }
 
-        internal override async Task<CommandResponse> PerformAction(User user)
+        internal override async Task<CommandResponse> PerformAction(IUser user)
         {
+
             if (!games.TryGetValue(user.SessionId, out var game))
             {
                 game = new Hangman(httpService, user.Fullname);
@@ -50,6 +49,14 @@ To start playing, type `!{Name} begin`
                     game = new Hangman(httpService, user.Fullname);
                     games[user.SessionId] = game;
                 }
+            }
+
+            if (string.IsNullOrEmpty(user.MessageArgument) || game.Status == HangmanGameStatus.Idle)
+            {
+                if (game.Status == HangmanGameStatus.Idle)
+                    return new CommandResponse(Name, "Game not started yet.");
+                else
+                    return new CommandResponse(Name, "No letter or word found.");
             }
 
             var action = GetAction(user.MessageArgument);
@@ -146,7 +153,7 @@ Try again next time amigo!
             }
         }
 
-        private static string GameCompletedResponse(Hangman game, User user)
+        private static string GameCompletedResponse(Hangman game, IUser user)
         {
             var scoreList = game.Participants.Select(e => new
             {
@@ -255,7 +262,7 @@ Participant's score:
         {
             private static readonly Uri ApiAddress = new Uri("https://hangman-api.herokuapp.com/hangman");
 
-            private readonly Dictionary<User, Score> participants = new Dictionary<User, Score>();
+            private readonly Dictionary<IUser, Score> participants = new Dictionary<IUser, Score>();
 
             private readonly IHttpService httpService;
 
@@ -265,12 +272,10 @@ Participant's score:
                 Initiator = initiator;
             }
 
-            public void UpdateParticipants(User user, HangmanResponseStatus status)
+            public void UpdateParticipants(IUser user, HangmanResponseStatus status)
             {
                 if (!participants.TryGetValue(user, out var score))
-                {
                     score = new Score();
-                }
                 score.CorrectGuesses += status == HangmanResponseStatus.Correct ? 1 : 0;
                 score.GuessCount++;
                 participants[user] = score;
@@ -426,7 +431,7 @@ Participant's score:
             public string? SanitizedStatusWord => Sanitize(LastStatusWord);
             public double Progress => RemainingLettersToGuess / (double)CountOfLettersToGuess;
             public bool IsCompleted => Progress >= 1;
-            public IReadOnlyDictionary<User, Score> Participants => participants;
+            public IReadOnlyDictionary<IUser, Score> Participants => participants;
 
             private static string? Sanitize(string? text)
             {

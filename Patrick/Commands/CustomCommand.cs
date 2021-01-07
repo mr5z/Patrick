@@ -13,8 +13,8 @@ using System.Web;
 
 namespace Patrick.Commands
 {
-	// TODO refactor this
-	// this is a fucking mess!
+    // TODO refactor this
+    // this is a fucking mess!
     class CustomCommand : BaseCommand
     {
         enum Parameters { Alias, Type, Method, Content, Path }
@@ -52,7 +52,7 @@ namespace Patrick.Commands
             IsNative = false;
         }
 
-        internal override async Task<CommandResponse> PerformAction(User user)
+        internal override async Task<CommandResponse> PerformAction(IUser user)
         {
             var oldComponents = OldArguments!.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             var api = oldComponents!.First();

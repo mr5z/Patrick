@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Patrick.Helpers
 {
-	static class CliHelper
+    static class CliHelper
 	{
 		public class Option<TKey> where TKey : struct
 		{
@@ -14,19 +14,19 @@ namespace Patrick.Helpers
 				Key = key;
 				Values = values;
 			}
-			public TKey Key { get; }
-			public string?[] Values { get; }
 			public void Deconstruct(out TKey key, out string?[] values)
 			{
 				key = Key;
 				values = Values;
 			}
+			public TKey Key { get; }
+			public string?[] Values { get; }
 		}
 
-		public static Dictionary<TKey, string?> ParseOptions<TKey>(string text, params Option<TKey>[] options) where TKey : struct
+		public static Dictionary<TKey, string?> ParseOptions<TKey>(string text, params Option<TKey>[] options) where TKey : struct, Enum
 		{
 			const char componentSeparator = ' ';
-			var values = new Dictionary<TKey, string?>();
+			var values = EnumDefaultValues<TKey, string?>();
 			var components = text.Split(componentSeparator, StringSplitOptions.RemoveEmptyEntries);
 			var combinedOptions = CombineOption(components, componentSeparator);
 			var entries = new Queue<string>(combinedOptions);
@@ -44,6 +44,18 @@ namespace Patrick.Helpers
 			return values;
 		}
 
+		private static Dictionary<TKey, TValue?> EnumDefaultValues<TKey, TValue>()
+			where TKey : struct, Enum
+		{
+			var type = typeof(TKey);
+			if (!type.IsEnum)
+				throw new ArgumentException("Key must be type enum.");
+
+			var values = Enum.GetValues(type).OfType<TKey>();
+
+			return values.ToDictionary(e => e, e => default(TValue));
+		}
+
 		public static List<string> CombineOption(string[]? texts, char separator)
 		{
 			var list = new List<string>();
@@ -51,23 +63,21 @@ namespace Patrick.Helpers
 			if (texts == null)
 				return list;
 
+			var knownPairs = new char[] { '"', '\'' };
+
 			for (var i = 0; i < texts.Length; ++i)
 			{
 				var txt = texts[i];
-				if (txt.StartsWith("\""))
+				var pair = knownPairs.FirstOrDefault(txt.StartsWith);
+
+				if (pair != default)
 				{
-					var (j, value) = FindPair('"', separator, i, texts);
-					i = j;
-					list.Add(value);
-				}
-				else if (txt.StartsWith('\''))
-				{
-					var (j, value) = FindPair('\'', separator, i, texts);
+					var (j, value) = FindPair(pair, separator, i, texts);
 					i = j;
 					list.Add(value);
 				}
 				else
-				{
+                {
 					list.Add(txt);
 				}
 			}
@@ -78,7 +88,7 @@ namespace Patrick.Helpers
 		{
 			var prem = textArray[currentIndex];
 			if (prem.Length > 1 && prem.StartsWith(token) && prem.EndsWith(token))
-				return (currentIndex, prem.Replace(token.ToString(), ""));
+				return (currentIndex, prem.Replace(token.ToString(), string.Empty));
 
             var builder = new StringBuilder(prem + separator);
 			var i = currentIndex + 1;
@@ -89,7 +99,7 @@ namespace Patrick.Helpers
 				if (endTxt.EndsWith(token))
 					break;
 			}
-			return (i - 1, builder.ToString().Replace(token.ToString(), "").Trim());
+			return (i - 1, builder.ToString().Replace(token.ToString(), string.Empty).Trim());
 		}
 	}
 }

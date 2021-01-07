@@ -7,7 +7,7 @@ using System.Web;
 
 namespace Patrick.Helpers
 {
-	static class QueryStringHelper
+    static class QueryStringHelper
 	{
 		public static T ToObject<T>(Uri uri)
 			where T : class, new()

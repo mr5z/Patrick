@@ -17,7 +17,7 @@ namespace Patrick.Commands
             RoleRequirement = Role.Delete;
         }
 
-        internal override Task<CommandResponse> PerformAction(User user)
+        internal override Task<CommandResponse> PerformAction(IUser user)
         {
             commandStore.ClearCommands();
             return Task.FromResult(new CommandResponse(Name, "All commands cleared!"));

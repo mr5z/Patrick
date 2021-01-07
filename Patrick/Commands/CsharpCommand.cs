@@ -1,8 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Patrick.Models;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,7 +15,7 @@ namespace Patrick.Commands
             Usage = $"!{Name} <insert C# code here>";
         }
 
-        internal override async Task<CommandResponse> PerformAction(User user)
+        internal override async Task<CommandResponse> PerformAction(IUser user)
         {
             if (string.IsNullOrEmpty(user.MessageArgument))
                 return new CommandResponse(Name, "Null argument.");
@@ -49,7 +47,7 @@ namespace Patrick.Commands
             catch (System.Exception ex)
             {
                 var msg = ex.Message;
-                throw;
+                return new CommandResponse(Name, $"```csharp\n{msg}\n```");
             }
             var stringBuilder = new StringBuilder();
             //string? line = null;
@@ -73,11 +71,14 @@ namespace Patrick.Commands
             {
                 scriptState = await CSharpScript.RunAsync(@"
 using System;
-using System.Linq;
 using System.Text;
+using System.Linq;
 ",
-                    ScriptOptions.Default.WithReferences(typeof(System.Text.StringBuilder).Assembly),
-                    ScriptOptions.Default.WithReferences(typeof(System.Linq.Enumerable).Assembly));
+                    ScriptOptions.Default.WithReferences(
+                        typeof(System.Math).Assembly,
+                        typeof(System.Text.StringBuilder).Assembly,
+                        typeof(System.Linq.Enumerable).Assembly)
+                    );
                 return this;
             }
 

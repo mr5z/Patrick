@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace Patrick.Extensions
 {
-	static class ObjectExtensions
+    static class ObjectExtensions
 	{
 		public static T ToObject<T>(this IDictionary<string, object> source)
 			where T : class, new() => ToObject<T, object>(source);

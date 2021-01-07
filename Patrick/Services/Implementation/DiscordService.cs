@@ -79,7 +79,7 @@ namespace Patrick.Services.Implementation
                     return;
                 }
 
-                var user = new User(arg.Author.Id, new DiscordChannel(arg.Channel))
+                var user = new DiscordUser(arg.Author.Id, new DiscordChannel(arg.Channel))
                 {
                     Fullname = arg.Author.Username,
                     MessageArgument = command.NewArguments,

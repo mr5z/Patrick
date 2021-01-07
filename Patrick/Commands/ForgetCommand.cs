@@ -18,7 +18,7 @@ namespace Patrick.Commands
             RoleRequirement = Role.Delete;
         }
 
-        internal override async Task<CommandResponse> PerformAction(User user)
+        internal override async Task<CommandResponse> PerformAction(IUser user)
         {
             if (user.MessageArgument == null)
                 return new CommandResponse(Name, "Cannot process null argument");

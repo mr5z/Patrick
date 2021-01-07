@@ -16,7 +16,7 @@ By default, count is set to 10 if you didn't specify an argument.
 ";
         }
 
-        internal override async Task<CommandResponse> PerformAction(User user)
+        internal override async Task<CommandResponse> PerformAction(IUser user)
         {
             var messageArgs = user.MessageArgument;
 

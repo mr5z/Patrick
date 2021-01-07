@@ -1,12 +1,11 @@
 ﻿using MonkeyCache.SQLite;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Patrick.Services.Repositories
 {
-	class MonkeyCacheRepository : IRepository
+    class MonkeyCacheRepository : IRepository
 	{
 		public MonkeyCacheRepository(string applicationId) =>
 			Barrel.ApplicationId = applicationId;

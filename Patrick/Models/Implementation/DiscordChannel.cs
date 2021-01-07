@@ -31,6 +31,22 @@ namespace Patrick.Models.Implementation
             catch (Discord.Net.HttpException) { return false; }
         }
 
+        public async Task<IReadOnlyCollection<IUser>> GetActiveUsers(CancellationToken cancellationToken)
+        {
+            var users = await channel.GetUsersAsync(mode: CacheMode.AllowDownload, options: new RequestOptions
+            {
+                CancelToken = cancellationToken
+            }).FlattenAsync();
+
+            return new List<IUser>(users.Select(e => new DiscordUser(e.Id, this)
+            {
+                Fullname = e.Username,
+                CurrentChannel = this,
+                SessionId = channel.Id,
+                Status = e.Status != UserStatus.Offline ? Enums.UserStatus.Online : Enums.UserStatus.Offline
+            }));
+        }
+
         public async Task<IReadOnlyCollection<IChannelMessage>> GetMessages(int count, CancellationToken cancellationToken)
         {
             var messages = await channel.GetMessagesAsync(count, options: new RequestOptions

@@ -2,11 +2,11 @@
 using System;
 using System.Collections.Generic;
 
-namespace Patrick.Models
+namespace Patrick.Models.Implementation
 {
-    class User : IEquatable<User?>
+    class DiscordUser : IUser, IEquatable<DiscordUser?>
     {
-        public User(ulong id, IChannel currentChannel)
+        public DiscordUser(ulong id, IChannel currentChannel)
         {
             Id = id;
             CurrentChannel = currentChannel;
@@ -18,13 +18,14 @@ namespace Patrick.Models
         public ulong SessionId { get; set; }
         public Role Role { get; set; }
         public IChannel CurrentChannel { get; set; }
+        public UserStatus Status { get; set; }
 
         public override bool Equals(object? obj)
         {
-            return Equals(obj as User);
+            return Equals(obj as DiscordUser);
         }
 
-        public bool Equals(User? other)
+        public bool Equals(DiscordUser? other)
         {
             return other != null &&
                    Id == other.Id;
@@ -35,12 +36,12 @@ namespace Patrick.Models
             return HashCode.Combine(Id);
         }
 
-        public static bool operator ==(User? left, User? right)
+        public static bool operator ==(DiscordUser? left, DiscordUser? right)
         {
-            return EqualityComparer<User>.Default.Equals(left, right);
+            return EqualityComparer<DiscordUser>.Default.Equals(left, right);
         }
 
-        public static bool operator !=(User? left, User? right)
+        public static bool operator !=(DiscordUser? left, DiscordUser? right)
         {
             return !(left == right);
         }

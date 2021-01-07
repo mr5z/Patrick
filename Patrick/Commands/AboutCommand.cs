@@ -17,7 +17,7 @@ namespace Patrick.Commands
             UseEmbed = true;
         }
 
-        internal override async Task<CommandResponse> PerformAction(User user)
+        internal override async Task<CommandResponse> PerformAction(IUser user)
         {
             if (user.MessageArgument == null)
                 return new CommandResponse(Name, Information);

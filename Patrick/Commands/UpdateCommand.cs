@@ -26,7 +26,7 @@ namespace Patrick.Commands
 ";
         }
 
-        internal override async Task<CommandResponse> PerformAction(User user)
+        internal override async Task<CommandResponse> PerformAction(IUser user)
         {
             if (string.IsNullOrEmpty(user.MessageArgument))
                 return new CommandResponse(Name, "Missing argument.");

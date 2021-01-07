@@ -43,7 +43,7 @@ For URL format:
 ";
         }
 
-        internal override async Task<CommandResponse> PerformAction(User user)
+        internal override async Task<CommandResponse> PerformAction(IUser user)
         {
             var argument = user.MessageArgument;
             if (argument == null)

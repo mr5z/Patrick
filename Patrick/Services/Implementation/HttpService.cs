@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Patrick.Services.Implementation
 {
-	class HttpService : IHttpService
+    class HttpService : IHttpService
 	{
 		private const string JsonContentType = "application/json";
 
