@@ -23,7 +23,8 @@ namespace Patrick.Helpers
 			public string?[] Values { get; }
 		}
 
-		public static Dictionary<TKey, string?> ParseOptions<TKey>(string text, params Option<TKey>[] options) where TKey : struct, Enum
+		public static Dictionary<TKey, string?> ParseOptions<TKey>(string text, params Option<TKey>[] options)
+			where TKey : struct, Enum
 		{
 			const char componentSeparator = ' ';
 			var values = EnumDefaultValues<TKey, string?>();

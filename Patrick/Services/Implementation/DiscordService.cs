@@ -61,59 +61,59 @@ namespace Patrick.Services.Implementation
             if (!message.StartsWith(TriggerText))
                 return;
 
-            var cts = new CancellationTokenSource(TypingDuration);
             try
             {
+                var cts = new CancellationTokenSource(TypingDuration);
                 await arg.Channel.TriggerTypingAsync(new RequestOptions { CancelToken = cts.Token });
             }
             catch (OperationCanceledException) { }
+
             var command = await ParseCommand(message);
-            if (command != null)
+
+            if (command == null)
             {
-                var currentRole = KnownUsers.Contains(arg.Author.Id) ? Role.FullAccess : Role.Read | Role.Write;
+                var result = await arg.Channel.SendMessageAsync(RandomDefaultResponse());
+                return;
+            }
 
-                if (!currentRole.HasFlag(command.RoleRequirement))
-                {
-                    var result = await arg.Channel.SendMessageAsync(
-                        "Sorry, you don't have the required role to perform this command");
-                    return;
-                }
+            var currentRole = KnownUsers.Contains(arg.Author.Id) ? Role.FullAccess : Role.Read | Role.Write;
 
-                var user = new DiscordUser(arg.Author.Id, new DiscordChannel(arg.Channel))
-                {
-                    Fullname = arg.Author.Username,
-                    MessageArgument = command.NewArguments,
-                    Role = currentRole,
-                    SessionId = arg.Channel.Id
-                };
+            if (!currentRole.HasFlag(command.RoleRequirement))
+            {
+                var result = await arg.Channel.SendMessageAsync(
+                    "Sorry, you don't have the required role to perform this command");
+                return;
+            }
 
-                var response = await command.PerformAction(user);
+            var user = new DiscordUser(arg.Author.Id, new DiscordChannel(arg.Channel))
+            {
+                Fullname = arg.Author.Username,
+                MessageArgument = command.NewArguments,
+                Role = currentRole,
+                SessionId = arg.Channel.Id
+            };
 
-                if (command.UseEmbed)
-                {
-                    var embed = new EmbedBuilder
-                        { Color = preferredColor }
-                        .WithTitle($":key: **__{response.CommandName}__**")
-                        //.WithAuthor(response.CommandName, Icons["CommandIcon"])
-                        .WithDescription(response.Message)
-                        .Build();
-                    var result = await arg.Channel.SendMessageAsync(embed: embed);
-                }
-                else
-                {
-                    if (string.IsNullOrEmpty(response.Message))
-                    {
-                        var result = await arg.Channel.SendMessageAsync(RandomDefaultResponse());
-                    }
-                    else
-                    {
-                        var result = await arg.Channel.SendMessageAsync(response.Message);
-                    }
-                }
+            var response = await command.PerformAction(user);
+
+            if (command.UseEmbed)
+            {
+                var embed = new EmbedBuilder { Color = preferredColor }
+                    .WithTitle($":key: **__{response.CommandName}__**")
+                    //.WithAuthor(response.CommandName, Icons["CommandIcon"])
+                    .WithDescription(response.Message)
+                    .Build();
+                var result = await arg.Channel.SendMessageAsync(embed: embed);
             }
             else
             {
-                var result = await arg.Channel.SendMessageAsync(RandomDefaultResponse());
+                if (string.IsNullOrEmpty(response.Message))
+                {
+                    var result = await arg.Channel.SendMessageAsync(RandomDefaultResponse());
+                }
+                else
+                {
+                    var result = await arg.Channel.SendMessageAsync(response.Message);
+                }
             }
         }
 

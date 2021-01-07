@@ -78,7 +78,7 @@ Closest match with the name __{helper.NameToFind}__:
                     new CliHelper.Option<Parameters>(Parameters.List, "-l", "--list")
                 );
 
-                return new Helper()
+                return new Helper
                 {
                     NameToFind = option[Parameters.FindId],
                     StatusToList = option[Parameters.List]
