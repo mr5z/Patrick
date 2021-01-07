@@ -28,46 +28,25 @@ findIdByName 'Name Here'
             return new CommandResponse(Name, "Yay!");
         }
 
-
-        enum Option { FindIdByName, ListActiveUsers }
         class Helper
         {
+            enum Parameters { FindId, List }
             public static Helper Parse(string text)
             {
-                var option = ParseOptions(text);
+                var option = CliHelper.ParseOptions(text,
+                    new CliHelper.Option<Parameters>(Parameters.FindId, "-f", "--find_id"),
+                    new CliHelper.Option<Parameters>(Parameters.List, "-l", "--list")
+                );
 
                 return new Helper()
                 {
-                    NameToFind = option[Option.FindIdByName]
-                };
-            }
-
-            private static Dictionary<Option, string?> ParseOptions(string text)
-            {
-                var dictionary = DefaultOptions();
-                var combinedOptions = CliHelper.CombineOption(text.Split(' ', StringSplitOptions.RemoveEmptyEntries), ' ');
-                var queue = new Queue<string?>(combinedOptions);
-                while (queue.Count > 0)
-                {
-                    var entry = queue.Dequeue();
-                    if (entry == "-f" || entry == "--findIdByName")
-                        dictionary[Option.FindIdByName] = queue.Dequeue();
-                    else if (entry == "-l" || entry == "--listActiveUsers")
-                        dictionary[Option.ListActiveUsers] = queue.Dequeue();
-                }
-                return dictionary;
-            }
-
-            private static Dictionary<Option, string?> DefaultOptions()
-            {
-                return new Dictionary<Option, string?>
-                {
-                    [Option.FindIdByName] = null,
-                    [Option.ListActiveUsers] = null
+                    NameToFind = option[Parameters.FindId],
+                    StatusToList = option[Parameters.List]
                 };
             }
 
             public string? NameToFind { get; set; }
+            public string? StatusToList { get; set; }
         }
     }
 }

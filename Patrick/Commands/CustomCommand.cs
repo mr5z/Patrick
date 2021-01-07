@@ -17,23 +17,23 @@ namespace Patrick.Commands
 	// this is a fucking mess!
     class CustomCommand : BaseCommand
     {
-        enum Option { Alias, Type, Method, Content, Path }
+        enum Parameters { Alias, Type, Method, Content, Path }
         enum ResponseType { Consume, Ignore }
         enum Method { Get, Post }
         enum ContentType { Json, Form, Multi }
 
 		private class OptionA
         {
-			private readonly Dictionary<Option, string?> options;
-            public OptionA(Dictionary<Option, string?> options)
+			private readonly Dictionary<Parameters, string?> options;
+            public OptionA(Dictionary<Parameters, string?> options)
             {
 				this.options = options;
             }
-			public string? Alias => options[Option.Alias];
-			public string? JsonPath => options[Option.Path];
-			public ResponseType ResponseType => ParseResponseType(options[Option.Type]);
-			public Method Method => ParseMethod(options[Option.Method]);
-			public ContentType ContentType => ParseContentType(options[Option.Content]);
+			public string? Alias => options.ContainsKey(Parameters.Alias) ? options[Parameters.Alias] : null;
+			public string? JsonPath => options.ContainsKey(Parameters.Path) ? options[Parameters.Path] : null;
+			public ResponseType ResponseType => ParseResponseType(options.ContainsKey(Parameters.Type) ? options[Parameters.Type] : null);
+			public Method Method => ParseMethod(options.ContainsKey(Parameters.Method) ? options[Parameters.Method] : null);
+			public ContentType ContentType => ParseContentType(options.ContainsKey(Parameters.Content) ? options[Parameters.Content] : null);
 		}
 
 		private readonly IHttpService? httpService;
@@ -67,8 +67,14 @@ namespace Patrick.Commands
             if (Uri.TryCreate(api, UriKind.Absolute, out var uri) &&
                 (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
             {
-                var parameters = oldComponents.Last();
-				var options = ParseOptions(parameters);
+				var parameters = oldComponents.Last();
+				var options = CliHelper.ParseOptions(parameters,
+					new CliHelper.Option<Parameters>(Parameters.Alias, "-a", "--alias"),
+					new CliHelper.Option<Parameters>(Parameters.Content, "-c", "--content"),
+					new CliHelper.Option<Parameters>(Parameters.Method, "-m", "--method"),
+					new CliHelper.Option<Parameters>(Parameters.Type, "-t", "--type"),
+					new CliHelper.Option<Parameters>(Parameters.Path, "-p", "--path")
+				);
 				var opt = new OptionA(options);
 				var argsCount = Regex.Matches(api, "({\\d+})").Count;
 
@@ -172,28 +178,6 @@ namespace Patrick.Commands
 			return null;
         }
 
-		private static Dictionary<Option, string?> ParseOptions(string text)
-		{
-			var dictionary = DefaultOptions();
-			var combinedOptions = CliHelper.CombineOption(text.Split(' ', StringSplitOptions.RemoveEmptyEntries), ' ');
-			var queue = new Queue<string?>(combinedOptions);
-			while (queue.Count > 0)
-			{
-				var entry = queue.Dequeue();
-				if (entry == "-t" || entry == "--type")
-					dictionary[Option.Type] = queue.Dequeue();
-				else if (entry == "-a" || entry == "--alias")
-					dictionary[Option.Alias] = queue.Dequeue();
-				else if (entry == "-m" || entry == "--method")
-					dictionary[Option.Method] = queue.Dequeue();
-				else if (entry == "-c" || entry == "--content")
-					dictionary[Option.Content] = queue.Dequeue();
-				else if (entry == "-p" || entry == "--path")
-					dictionary[Option.Path] = queue.Dequeue();
-			}
-			return dictionary;
-		}
-
 		private static ResponseType ParseResponseType(string? value)
 		{
 			return value switch
@@ -225,16 +209,5 @@ namespace Patrick.Commands
 			};
 		}
 
-		private static Dictionary<Option, string?> DefaultOptions()
-		{
-			return new Dictionary<Option, string?>
-			{
-				[Option.Alias] = null,
-				[Option.Type] = null,
-				[Option.Method] = null,
-				[Option.Content] = null,
-				[Option.Path] = null,
-			};
-		}
 	}
 }

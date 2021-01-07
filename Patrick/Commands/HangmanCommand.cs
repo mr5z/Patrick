@@ -83,8 +83,8 @@ To start playing, type `!{Name} begin`
                         var statusText = status switch
                         {
                             HangmanResponseStatus.AlreadyGuessed => "Already guessed.",
-                            HangmanResponseStatus.Correct => "Guessed correct!",
-                            HangmanResponseStatus.Wrong => "Guessed wrong!",
+                            HangmanResponseStatus.Correct => ":white_check_mark: Correct!",
+                            HangmanResponseStatus.Wrong => ":warning: Wrong!",
                             _ => "Undefined."
                         };
                         return new CommandResponse(Name,
@@ -124,6 +124,23 @@ To start playing, type `!{Name} begin`
                             return new CommandResponse(Name, 
                                 GenerateDefaultResponse(game, action, "Wrong guess homie!"));
 
+                    }
+
+                case HangmanUserAction.Surrender:
+                    {
+                        var solution = await game.Surrender(user.MessageArgument);
+
+                        if (string.IsNullOrEmpty(solution))
+                            return new CommandResponse(Name,
+                                GenerateDefaultResponse(game, action, "Something went wrong."));
+
+                        return new CommandResponse(Name, @$"
+You surrendered :(
+
+Correct word is: **{solution}**
+
+Try again next time amigo!
+");
                     }
                 default: return new CommandResponse(Name, "In case this one gets executed, there's really some fucked up happening.");
             }
@@ -326,6 +343,22 @@ Participant's score:
                 }
 
                 return result ? HangmanResponseStatus.Correct : HangmanResponseStatus.Wrong;
+            }
+
+            public async Task<string?> Surrender(string? text, CancellationToken cancellationToken = default)
+            {
+                var address = $"{ApiAddress.AbsoluteUri}?token={Token}";
+                var response = await httpService.Get<HangmanDto>(new Uri(address),
+                    cancellationToken);
+                if (response == null)
+                    return null;
+
+                if (string.IsNullOrEmpty(response.Solution))
+                    return null;
+
+                RemainingLettersToGuess = CountOfLettersToGuess;
+
+                return response.Solution;
             }
 
             public async Task<HangmanResponseStatus> Guess(char letter, CancellationToken cancellationToken = default)
