@@ -5,6 +5,7 @@ using Patrick.Services;
 using System;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Patrick.Commands
@@ -12,17 +13,15 @@ namespace Patrick.Commands
     class ManageRoleCommand : BaseCommand
     {
         private readonly IUserService userService;
-        private readonly IUserFactory userFactory;
 
-        public ManageRoleCommand(IUserService userService, IUserFactory userFactory) : base("managerole")
+        public ManageRoleCommand(IUserService userService) : base("managerole")
         {
             this.userService = userService;
-            this.userFactory = userFactory;
 
             RoleRequirement = Role.ManageRoles;
             Description = "Role management command";
             Usage = @$"
-!{Name} <user_id> -a / --add | -r / --remove R|W|D|MR|MU
+!{Name} -a / --add | -r / --remove R|W|D|MR|MU @MentionSomeone
 
 __R__ - Read
 __W__ - Write
@@ -31,65 +30,50 @@ __MR__ - Manage Roles
 __MU__ - Manage Users (wip)";
         }
 
+        enum Operation { Add, Remove }
         internal override async Task<CommandResponse> PerformAction(IUser user)
         {
             if (string.IsNullOrEmpty(user.MessageArgument))
                 return new CommandResponse(Name, "Missing arguments");
 
-            var userManaging = await userService.Find(user.Id);
+            if (user.MentionedUsers.Count != 1)
+                return new CommandResponse(Name, "Mentioned user should exactly be one only.");
 
-            if (userManaging == null)
-            {
-                var result = await userService.AddUser(user);
-                if (!result)
-                    return new CommandResponse(Name, "Something went wrong. Please contact the admin.");
-                userManaging = user;
-            }
+            var regex = new Regex("<@![0-9]*>");
+            var argument = regex.Replace(user.MessageArgument, "").Trim();
 
-            var components = user.MessageArgument.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-            var userIdString = components.First();
-            var optionString = components.Last();
-
-            if (userIdString == optionString)
-                return new CommandResponse(Name, "Invalid arguments.");
-
-            if (!ulong.TryParse(userIdString, out var userIdToManage))
-                return new CommandResponse(Name, "Invalid arguments.");
-
-            var options = CliHelper.ParseOptions(optionString,
+            var options = CliHelper.ParseOptions(argument,
                 new CliHelper.Option<Operation>(Operation.Add, "-a", "--add"),
                 new CliHelper.Option<Operation>(Operation.Remove, "-r", "--remove")
             );
 
-            var activeUser = await user.CurrentChannel.FindUser(userIdToManage);
-            var cachedUser = await userService.Find(userIdToManage);
-            activeUser ??= cachedUser ?? userFactory.Create(userIdToManage);
+            var userToManage = user.MentionedUsers.Single();
 
             if (!string.IsNullOrEmpty(options[Operation.Add]))
             {
-                var newRole = GenerateNewRole(options[Operation.Add]!);
-                activeUser.Role = newRole;
+                var newRole = AssignNewRole(options[Operation.Add]!);
+                userToManage.Role = newRole;
             }
 
             if (!string.IsNullOrEmpty(options[Operation.Remove]))
             {
-                var newRole = GenerateNewRole(options[Operation.Remove]!);
-                activeUser.Role = newRole;
+                var newRole = RemoveNewRole(options[Operation.Remove]!);
+                userToManage.Role = newRole;
             }
 
-            var roleAssignmentSuccess = await userService.AddUser(activeUser);
+            var roleAssignmentSuccess = await userService.AddUser(userToManage);
 
-            var roleString = RoleHelper.GenerateEmojiRoles(activeUser.Role);
+            var roleString = RoleHelper.GenerateEmojiRoles(userToManage.Role);
 
             return new CommandResponse(Name, @$"
 
-User: __{activeUser.Fullname}__
+User: __{userToManage.Fullname}__
 New Role: {roleString}
 Status: {(roleAssignmentSuccess ? "Success" : "Failed")}
 ");
         }
 
-        private static Role GenerateNewRole(string roleString)
+        private static Role AssignNewRole(string roleString)
         {
             var roles = roleString.Split('|');
             var newRole = Role.None;
@@ -117,7 +101,34 @@ Status: {(roleAssignmentSuccess ? "Success" : "Failed")}
             return newRole;
         }
 
-        enum Operation { Add, Remove }
+        private static Role RemoveNewRole(string roleString)
+        {
+            var roles = roleString.Split('|');
+            var newRole = Role.None;
+            foreach (var r in roles)
+            {
+                switch (r)
+                {
+                    case "R":
+                        newRole &= ~Role.Read;
+                        break;
+                    case "W":
+                        newRole &= ~Role.Write;
+                        break;
+                    case "D":
+                        newRole &= ~Role.Delete;
+                        break;
+                    case "MR":
+                        newRole &= ~Role.ManageRoles;
+                        break;
+                    case "MU":
+                        newRole &= ~Role.ManageUsers;
+                        break;
+                }
+            }
+            return newRole;
+        }
+
 
     }
 }

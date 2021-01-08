@@ -47,5 +47,11 @@ namespace Patrick.Services.Implementation
         {
             return await repository.GetList<IUser>(CollectionName, cancellationToken);
         }
+
+        public Task ClearUsers(CancellationToken cancellationToken)
+        {
+            repository.ClearAll();
+            return Task.CompletedTask;
+        }
     }
 }

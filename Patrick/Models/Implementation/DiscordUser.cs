@@ -19,6 +19,7 @@ namespace Patrick.Models.Implementation
         public Role Role { get; set; }
         public IChannel CurrentChannel { get; set; }
         public UserStatus Status { get; set; }
+        public IReadOnlyList<IUser> MentionedUsers { get; set; } = new List<IUser>();
 
         public override bool Equals(object? obj)
         {

@@ -23,6 +23,7 @@ namespace Patrick.Models.Implementation
             {
                 await channel.DeleteMessageAsync(messageId, new RequestOptions
                 {
+                    RetryMode = RetryMode.RetryRatelimit,
                     CancelToken = cancellationToken
                 });
                 return true;

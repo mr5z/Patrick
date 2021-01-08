@@ -1,5 +1,7 @@
 ﻿using Patrick.Enums;
 using Patrick.Models;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Patrick.Commands
@@ -35,8 +37,7 @@ By default, count is set to 10 if you didn't specify an argument.
                 }
                 catch (System.Exception ex)
                 {
-                    var m = ex.Message;
-                    throw;
+                    return new CommandResponse(Name, ex.Message, ("cs", "```"));
                 }
             }
 
@@ -44,12 +45,17 @@ By default, count is set to 10 if you didn't specify an argument.
                 messageCount = 10;
 
             var messages = await user.CurrentChannel.GetMessages(messageCount);
-            bool result = true;
+            var taskList = new List<Task<bool>>();
             foreach (var msg in messages)
-                result = result && await user.CurrentChannel.DeleteMessage(msg.Id);
+            {
+                var task = user.CurrentChannel.DeleteMessage(msg.Id);
+                taskList.Add(task);
+            }
+
+            var result = await Task.WhenAll(taskList);
 
             return new CommandResponse(Name, 
-                result ? $"Deleted {messages.Count} messages." : 
+                result.All(e => e) ? $"Deleted {messages.Count} messages." :
                 "There's some problem deleting the messages.");
         }
     }

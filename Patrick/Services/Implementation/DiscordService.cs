@@ -97,12 +97,18 @@ namespace Patrick.Services.Implementation
                 return;
             }
 
-            var discordUser = new DiscordUser(arg.Author.Id, new DiscordChannel(arg.Channel))
+            var currentChannel = new DiscordChannel(arg.Channel);
+            var discordUser = new DiscordUser(arg.Author.Id, currentChannel)
             {
                 Fullname = arg.Author.Username,
                 MessageArgument = command.NewArguments,
                 Role = currentRole,
-                SessionId = arg.Channel.Id
+                SessionId = arg.Channel.Id,
+                MentionedUsers = arg.MentionedUsers.Select(e => new DiscordUser(e.Id, currentChannel)
+                {
+                    Fullname = e.Username,
+                    SessionId = arg.Channel.Id
+                }).ToList()
             };
 
             var response = await command.PerformAction(discordUser);

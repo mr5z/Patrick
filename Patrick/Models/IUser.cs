@@ -1,4 +1,5 @@
 ﻿using Patrick.Enums;
+using System.Collections.Generic;
 
 namespace Patrick.Models
 {
@@ -11,5 +12,6 @@ namespace Patrick.Models
         ulong SessionId { get; set; }
         Role Role { get; set; }
         UserStatus Status { get; set; }
+        IReadOnlyList<IUser> MentionedUsers { get; set; }
     }
 }

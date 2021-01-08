@@ -12,5 +12,6 @@ namespace Patrick.Services
         Task<bool> AddUsers(IEnumerable<IUser> users);
         Task<IUser?> Find(ulong userId, CancellationToken cancellationToken = default);
         Task<bool> RemoveUser(IUser user, CancellationToken cancellationToken = default);
+        Task ClearUsers(CancellationToken cancellationToken = default);
     }
 }
