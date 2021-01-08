@@ -31,6 +31,12 @@ namespace Patrick.Models.Implementation
             catch (Discord.Net.HttpException) { return false; }
         }
 
+        public async Task<IUser?> FindUser(ulong userId, CancellationToken cancellationToken = default)
+        {
+            var activeUsers = await GetActiveUsers(cancellationToken);
+            return activeUsers.FirstOrDefault(e => e.Id == userId);
+        }
+
         public async Task<IReadOnlyCollection<IUser>> GetActiveUsers(CancellationToken cancellationToken)
         {
             var users = await channel.GetUsersAsync(mode: CacheMode.AllowDownload, options: new RequestOptions

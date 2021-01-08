@@ -25,6 +25,8 @@ namespace Patrick
                 .AddSingleton<IHttpService, HttpService>()
                 .AddTransient<IChatService, DiscordService>()
                 .AddTransient<ICommandParser, CommandParser>()
+                .AddTransient<IUserService, UserService>()
+                .AddTransient<IUserFactory, DiscordUserFactory>()
                 .BuildServiceProvider();
 
             return serviceProvider!;

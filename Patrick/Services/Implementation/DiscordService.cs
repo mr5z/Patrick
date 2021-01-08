@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Patrick.Commands;
 using Patrick.Enums;
 using Patrick.Models;
@@ -15,19 +16,26 @@ namespace Patrick.Services.Implementation
 {
     class DiscordService : IChatService
     {
-        private readonly DiscordSocketClient client = new DiscordSocketClient();
+        private const Role DefaultRole = Role.Read | Role.Write;
+
         private readonly IAppConfigProvider configProvider;
         private readonly ICommandParser commandParser;
         private readonly IServiceProvider serviceProvider;
+        private readonly IUserService userService;
+
+        private readonly DiscordSocketClient client = new DiscordSocketClient();
         private readonly Color preferredColor = new Color(255, 144, 148);
 
         public DiscordService(
             IAppConfigProvider configProvider,
             ICommandParser commandParser,
-            IServiceCollection serviceCollection)
+            IServiceCollection serviceCollection,
+            IUserService userService)
         {
             this.configProvider = configProvider;
             this.commandParser = commandParser;
+            this.userService = userService;
+
             serviceCollection.AddTransient(typeof(CustomCommand));
             serviceProvider = serviceCollection.BuildServiceProvider();
             client.MessageReceived += Client_MessageReceived;
@@ -76,16 +84,20 @@ namespace Patrick.Services.Implementation
                 return;
             }
 
-            var currentRole = KnownUsers.Contains(arg.Author.Id) ? Role.FullAccess : Role.Read | Role.Write;
+            var user = await userService.Find(arg.Author.Id);
+
+            var currentRole = KnownUsers.Contains(arg.Author.Id) ? 
+                Role.FullAccess : user?.Role ?? DefaultRole;
 
             if (!currentRole.HasFlag(command.RoleRequirement))
             {
                 var result = await arg.Channel.SendMessageAsync(
-                    "Sorry, you don't have the required role to perform this command");
+                    "Sorry, you don't have the required role to perform this command"
+                );
                 return;
             }
 
-            var user = new DiscordUser(arg.Author.Id, new DiscordChannel(arg.Channel))
+            var discordUser = new DiscordUser(arg.Author.Id, new DiscordChannel(arg.Channel))
             {
                 Fullname = arg.Author.Username,
                 MessageArgument = command.NewArguments,
@@ -93,28 +105,58 @@ namespace Patrick.Services.Implementation
                 SessionId = arg.Channel.Id
             };
 
-            var response = await command.PerformAction(user);
+            var response = await command.PerformAction(discordUser);
 
-            if (command.UseEmbed)
+            await RespondToChannel(arg.Channel, response);
+        }
+
+        private async Task RespondToChannel(ISocketMessageChannel channel, CommandResponse response, bool isEmbed = false)
+        {
+            if (string.IsNullOrEmpty(response.Message))
             {
-                var embed = new EmbedBuilder { Color = preferredColor }
-                    .WithTitle($":key: **__{response.CommandName}__**")
-                    //.WithAuthor(response.CommandName, Icons["CommandIcon"])
-                    .WithDescription(response.Message)
-                    .Build();
-                var result = await arg.Channel.SendMessageAsync(embed: embed);
+                var result = await channel.SendMessageAsync(RandomDefaultResponse());
+                return;
             }
-            else
+
+            var (tag, token) = response.MessageEnclosure.HasValue ?
+                response.MessageEnclosure.Value : ("", "");
+
+            var paddedMessage = response.MessageEnclosure.HasValue ? $"{tag}{token}{token}\n\n".Length : 0;
+            const int discordBotMessageLimit = 2000;
+            var chunks = ChunksUpto(response.Message, discordBotMessageLimit - paddedMessage);
+
+            foreach(var msg in chunks)
             {
-                if (string.IsNullOrEmpty(response.Message))
+                var message =
+                    response.MessageEnclosure.HasValue ?
+                    $"{token}{tag}\n{msg}\n{token}" : msg;
+
+                try
                 {
-                    var result = await arg.Channel.SendMessageAsync(RandomDefaultResponse());
+                    if (isEmbed)
+                    {
+                        var embed = new EmbedBuilder { Color = preferredColor }
+                            .WithTitle($":key: **__{response.CommandName}__**")
+                            .WithDescription(message)
+                            .Build();
+                        var result = await channel.SendMessageAsync(embed: embed);
+                    }
+                    else
+                    {
+                        var result = await channel.SendMessageAsync(message);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    var result = await arg.Channel.SendMessageAsync(response.Message);
+                    var result = await channel.SendMessageAsync($"```{ex.Message}```");
                 }
             }
+        }
+
+        private static IEnumerable<string> ChunksUpto(string str, int maxChunkSize)
+        {
+            for (int i = 0; i < str.Length; i += maxChunkSize)
+                yield return str.Substring(i, Math.Min(maxChunkSize, str.Length - i));
         }
 
         private async Task<BaseCommand?> ParseCommand(string text)

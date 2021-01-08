@@ -13,10 +13,22 @@ namespace Patrick.Services.Repositories
 		public async Task<string?> Add<T>(string collectionName, T value, CancellationToken cancellationToken)
 		{
 			var list = await GetList<T>(collectionName, cancellationToken);
+			list.Remove(value);
 			list.Add(value);
 			Barrel.Current.Add(collectionName, list, Timeout.InfiniteTimeSpan);
 			// TODO return the inserted id?
-			return null;
+			return "1";
+		}
+
+		public async Task<IReadOnlyList<string?>> AddList<T>(string collectionName, IEnumerable<T> values, CancellationToken cancellationToken = default)
+		{
+			var taskList = new List<Task<string?>>();
+			foreach (var value in values)
+            {
+				var task = Add(collectionName, value, cancellationToken);
+				taskList.Add(task);
+			}
+			return await Task.WhenAll(taskList);
 		}
 
 		public async Task<bool> Remove<T>(string collectionName, T value, CancellationToken cancellationToken)

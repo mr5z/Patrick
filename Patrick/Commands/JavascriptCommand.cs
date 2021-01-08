@@ -7,10 +7,14 @@ namespace Patrick.Commands
 {
     class JavascriptCommand : BaseCommand
     {
+        private const string CallbackName = "___log___";
+
+        private readonly Engine javascriptEngine = new Engine();
+
         public JavascriptCommand() : base("js")
         {
             Description = "Executes [JavaScipt](https://en.wikipedia.org/wiki/JavaScript) code";
-            Usage = $"!{Name} <javascript code>";
+            Usage = $"!{Name} <JavaScript code>";
         }
 
         internal override async Task<CommandResponse> PerformAction(IUser user)
@@ -21,15 +25,25 @@ namespace Patrick.Commands
             var tcs = new TaskCompletionSource<CommandResponse>();
             Action<object> callback = (output) =>
             {
-                var result = new CommandResponse(Name, $"```js\n{output}\n```");
+                var result = new CommandResponse(Name, output.ToString(), ("js", "```"));
                 tcs.TrySetResult(result);
             };
 
-            const string callbackName = "log";
-            var engine = new Engine()
-                .SetValue(callbackName, callback);
+            javascriptEngine.SetValue(CallbackName, callback);
 
-            engine.Execute($"{callbackName}({user.MessageArgument})");
+            try
+            {
+                javascriptEngine.Execute($"{CallbackName}({user.MessageArgument})", new Jint.Parser.ParserOptions
+                {
+                    Comment = true,
+                    Tokens = true,
+                    Tolerant = true
+                });
+            }
+            catch (Exception ex)
+            {
+                return new CommandResponse(Name, ex.Message, ("js", "```"));
+            }
 
             return await tcs.Task;
         }

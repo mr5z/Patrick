@@ -1,5 +1,7 @@
-﻿using Patrick.Helpers;
+﻿using Patrick.Enums;
+using Patrick.Helpers;
 using Patrick.Models;
+using Patrick.Services;
 using System;
 using System.Linq;
 using System.Text;
@@ -9,8 +11,12 @@ namespace Patrick.Commands
 {
     class UserCommand : BaseCommand
     {
-        public UserCommand() : base("user")
+        private readonly IUserService userService;
+
+        public UserCommand(IUserService userService) : base("user")
         {
+            this.userService = userService;
+
             UseEmbed = true;
             Description = "User utility.";
             Usage = @"
@@ -47,19 +53,29 @@ Options:
             if (!string.IsNullOrEmpty(helper.NameToFind))
             {
                 var activeUsers = await user.CurrentChannel.GetActiveUsers();
-                var snowflake = activeUsers.FirstOrDefault(e =>
-                    e.Fullname?.Contains(helper.NameToFind, StringComparison.OrdinalIgnoreCase) ?? false
-                );
+                var cachedUsers = await userService.GetUsers();
+                Func<IUser, bool> comparer = (user) =>
+                {
+                    return user.Fullname?.Contains(helper.NameToFind, StringComparison.OrdinalIgnoreCase) ?? false;
+                };
+                var cachedUser = cachedUsers.FirstOrDefault(comparer);
+                var snowflake = activeUsers.FirstOrDefault(comparer) ?? cachedUser;
 
                 if (snowflake != default)
+                {
+                    snowflake.Role = cachedUser?.Role ?? (Role.Write | Role.Read);
                     outputBuilder.AppendLine(@$"
 Closest match with the name __{helper.NameToFind}__:
 
-**Id**: *{snowflake.Id}*
-**Name**: *{snowflake.Fullname}*
+**Id**: {snowflake.Id}
+**Name**: {snowflake.Fullname}
+**Roles**: {RoleHelper.GenerateEmojiRoles(snowflake.Role)}
 ");
+                }
                 else
-                    outputBuilder.Append($"No user found that matches the name *{helper.NameToFind}*");
+                {
+                    outputBuilder.Append($"No active user found that matches the name *{helper.NameToFind}*");
+                }
             }
 
             if (outputBuilder.Length == 0)
@@ -70,17 +86,17 @@ Closest match with the name __{helper.NameToFind}__:
 
         class Helper
         {
-            enum Parameters { FindId, List }
+            enum Parameters { Find, List }
             public static Helper Parse(string text)
             {
                 var option = CliHelper.ParseOptions(text,
-                    new CliHelper.Option<Parameters>(Parameters.FindId, "-f", "--find"),
+                    new CliHelper.Option<Parameters>(Parameters.Find, "-f", "--find"),
                     new CliHelper.Option<Parameters>(Parameters.List, "-l", "--list")
                 );
 
                 return new Helper
                 {
-                    NameToFind = option[Parameters.FindId],
+                    NameToFind = option[Parameters.Find],
                     StatusToList = option[Parameters.List]
                 };
             }

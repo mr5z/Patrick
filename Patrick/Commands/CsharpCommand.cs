@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Patrick.Models;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -35,8 +34,6 @@ namespace Patrick.Commands
 
             var engine = new CSharpScriptEngine();
 
-            string.Join(", ", System.Linq.Enumerable.Range(0, 10).Select(e => $"{10 - e}"));
-
             object? result = null;
             try
             {
@@ -47,7 +44,7 @@ namespace Patrick.Commands
             catch (System.Exception ex)
             {
                 var msg = ex.Message;
-                return new CommandResponse(Name, $"```csharp\n{msg}\n```");
+                return new CommandResponse(Name, msg, ("csharp", "```"));
             }
             var stringBuilder = new StringBuilder();
             //string? line = null;
@@ -57,11 +54,9 @@ namespace Patrick.Commands
             //    // do something with line
             //}
 
-
-            return new CommandResponse(Name, @$"
-```csharp
-{result?.ToString() ?? stringBuilder.ToString()}
-```");
+            return new CommandResponse(Name,
+                $"{result?.ToString() ?? stringBuilder.ToString()}",
+                ("csharp", "```"));
         }
 
         class CSharpScriptEngine
@@ -75,9 +70,9 @@ using System.Text;
 using System.Linq;
 ",
                     ScriptOptions.Default.WithReferences(
-                        typeof(System.Math).Assembly,
-                        typeof(System.Text.StringBuilder).Assembly,
-                        typeof(System.Linq.Enumerable).Assembly)
+                        typeof(global::System.Math).Assembly,
+                        typeof(global::System.Text.StringBuilder).Assembly,
+                        typeof(global::System.Linq.Enumerable).Assembly)
                     );
                 return this;
             }
