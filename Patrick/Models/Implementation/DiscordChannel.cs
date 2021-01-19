@@ -12,9 +12,12 @@ namespace Patrick.Models.Implementation
     {
         private readonly ISocketMessageChannel channel;
 
+        public ulong Id { get; }
+
         public DiscordChannel(ISocketMessageChannel channel)
         {
             this.channel = channel;
+            Id = channel?.Id ?? 0;
         }
 
         public async Task<bool> DeleteMessage(ulong messageId, CancellationToken cancellationToken)
@@ -61,6 +64,24 @@ namespace Patrick.Models.Implementation
                 CancelToken = cancellationToken
             }).FlattenAsync();
             return new List<IChannelMessage>(messages.Select(e => new DiscordChannelMessage(e.Id)));
+        }
+
+        public async Task<bool> SendMessage(CommandResponse response)
+        {
+            if (response.UseEmbed)
+            {
+                var embed = new EmbedBuilder { }
+                    .WithTitle($":key: **__{response.CommandName}__**")
+                    .WithDescription(response.Message)
+                    .Build();
+                var result = await channel.SendMessageAsync(embed: embed);
+            }
+            else
+            {
+                var result = await channel.SendMessageAsync(response.Message);
+            }
+
+            return true;
         }
     }
 }

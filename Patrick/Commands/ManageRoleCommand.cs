@@ -2,9 +2,7 @@
 using Patrick.Helpers;
 using Patrick.Models;
 using Patrick.Services;
-using System;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -27,7 +25,8 @@ __R__ - Read
 __W__ - Write
 __D__ - Delete
 __MR__ - Manage Roles
-__MU__ - Manage Users (wip)";
+__MU__ - Manage Users (wip)
+".Trim();
         }
 
         enum Operation { Add, Remove }

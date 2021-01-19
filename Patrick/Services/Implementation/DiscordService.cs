@@ -1,7 +1,7 @@
 ﻿using Discord;
+using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Patrick.Commands;
 using Patrick.Enums;
 using Patrick.Models;
@@ -22,38 +22,47 @@ namespace Patrick.Services.Implementation
         private readonly ICommandParser commandParser;
         private readonly IServiceProvider serviceProvider;
         private readonly IUserService userService;
+        private readonly IAudioService audioService;
+        private readonly IGistGithubService gistGithubService;
 
-        private readonly DiscordSocketClient client = new DiscordSocketClient();
+        private readonly DiscordSocketClient socketClient = new DiscordSocketClient();
         private readonly Color preferredColor = new Color(255, 144, 148);
 
         public DiscordService(
             IAppConfigProvider configProvider,
             ICommandParser commandParser,
             IServiceCollection serviceCollection,
-            IUserService userService)
+            IUserService userService,
+            IAudioService audioService,
+            IGistGithubService gistGithubService)
         {
             this.configProvider = configProvider;
             this.commandParser = commandParser;
             this.userService = userService;
+            this.audioService = audioService;
+            this.gistGithubService = gistGithubService;
 
             serviceCollection.AddTransient(typeof(CustomCommand));
             serviceProvider = serviceCollection.BuildServiceProvider();
-            client.MessageReceived += Client_MessageReceived;
+            socketClient.MessageReceived += Client_MessageReceived;
         }
 
         public async Task Start()
         {
             var token = configProvider.Configuration.Discord!.Token!;
-            await client.LoginAsync(TokenType.Bot, token);
-            await client.StartAsync();
+            await socketClient.LoginAsync(TokenType.Bot, token);
+            await socketClient.StartAsync();
+            audioService.Configure(socketClient);
+
             Console.WriteLine("I'm alive!");
             if (KnownChannels != null)
             {
                 foreach(var serverId in KnownChannels)
                 {
-                    if (client.GetChannel(serverId) is IMessageChannel channel)
+                    var channel = socketClient.GetChannel(serverId);
+                    if (channel != null && channel is SocketTextChannel textChannel)
                     {
-                        await channel.SendMessageAsync("I'm alive!");
+                        await textChannel.SendMessageAsync("I'm alive!");
                     }
                 }
             }
@@ -69,6 +78,17 @@ namespace Patrick.Services.Implementation
             if (!message.StartsWith(TriggerText))
                 return;
 
+            Console.WriteLine("{0} -> {1} say, {2}", DateTime.Now, arg.Author.Username, arg.Content);
+
+            try
+            {
+                //await gistGithubService.Authenticate();
+            }
+            catch (Exception ex)
+            {
+                var msg = ex.Message;
+            }
+
             try
             {
                 var cts = new CancellationTokenSource(TypingDuration);
@@ -81,6 +101,8 @@ namespace Patrick.Services.Implementation
             if (command == null)
             {
                 var result = await arg.Channel.SendMessageAsync(RandomDefaultResponse());
+                //await AddReactionText("Deleting in 5 seconds", result);
+                _ = Task.Delay(TimeSpan.FromSeconds(10)).ContinueWith(t => result.DeleteAsync());
                 return;
             }
 
@@ -113,23 +135,70 @@ namespace Patrick.Services.Implementation
 
             var response = await command.PerformAction(discordUser);
 
-            await RespondToChannel(arg.Channel, response);
+            await RespondToChannel(arg.Channel, response, command.UseEmbed);
         }
 
-        private async Task RespondToChannel(ISocketMessageChannel channel, CommandResponse response, bool isEmbed = false)
+        private static async Task AddReactionText(string reactionText, RestUserMessage message)
         {
+            //await message.AddReactionAsync(Emote.Parse("<:regional_indicator_a:bbe8ae762f831966587a35010ed46f67>"));
+            //return;
+            foreach (var c in reactionText)
+            {
+                if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z')
+                {
+                    var react = $"<:regional_indicator_{char.ToLower(c)}:>";
+                    Emote? emote = null;
+                    try
+                    {
+                        emote = Emote.Parse(react);
+                    }
+                    catch (Exception ex)
+                    {
+                        var msg = ex.Message;
+                        continue;
+                    }
+                    await message.AddReactionAsync(Emote.Parse(react));
+                }
+                else if (c >= '0' && c <= '9')
+                    await message.AddReactionAsync(Emote.Parse($":{NumberToWord(c - '0')}:"));
+                else if (c == ' ')
+                    await message.AddReactionAsync(Emote.Parse(":heavy_minus_sign:"));
+            }
+        }
+
+        private static string NumberToWord(int number)
+        {
+            var dictionary = new Dictionary<int, string>
+            {
+                [0] = "zero",
+                [1] = "one",
+                [2] = "two",
+                [3] = "three",
+                [4] = "four",
+                [5] = "five",
+                [6] = "six",
+                [7] = "seven",
+                [8] = "eigth",
+                [9] = "nine"
+            };
+            return dictionary[number];
+        }
+
+        private async Task RespondToChannel(ISocketMessageChannel channel, CommandResponse response, bool isEmbed)
+        {
+            const int DiscordBotMessageLimit = 2000;
+
             if (string.IsNullOrEmpty(response.Message))
             {
                 var result = await channel.SendMessageAsync(RandomDefaultResponse());
+                _ = Task.Delay(TimeSpan.FromSeconds(10)).ContinueWith(t => result.DeleteAsync());
                 return;
             }
 
-            var (tag, token) = response.MessageEnclosure.HasValue ?
-                response.MessageEnclosure.Value : ("", "");
+            var (tag, token) = response.MessageEnclosure! ?? ("", "");
 
             var paddedMessage = response.MessageEnclosure.HasValue ? $"{tag}{token}{token}\n\n".Length : 0;
-            const int discordBotMessageLimit = 2000;
-            var chunks = ChunksUpto(response.Message, discordBotMessageLimit - paddedMessage);
+            var chunks = ChunksUpto(response.Message, DiscordBotMessageLimit - paddedMessage);
 
             foreach(var msg in chunks)
             {

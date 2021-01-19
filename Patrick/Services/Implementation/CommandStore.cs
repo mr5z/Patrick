@@ -11,17 +11,23 @@ namespace Patrick.Services.Implementation
     class CommandStore : ICommandStore
     {
         private const string CollectionName = "Commands";
+        private const string GistsCollectionName = "Gists";
 
         private readonly IRepository repository;
         private readonly IServiceCollection serviceCollection;
+        private readonly IGistGithubService gistService;
 
         private readonly HashSet<BaseCommand> nativeCommands = new HashSet<BaseCommand>();
         private bool nativeCommandsPopulated;
 
-        public CommandStore(IRepository repository, IServiceCollection serviceCollection)
+        public CommandStore(
+            IRepository repository,
+            IServiceCollection serviceCollection,
+            IGistGithubService gistService)
         {
             this.repository = repository;
             this.serviceCollection = serviceCollection;
+            this.gistService = gistService;
         }
 
         private void PopulateNativeCommands()
@@ -96,6 +102,19 @@ namespace Patrick.Services.Implementation
         {
             await Task.Run(PopulateNativeCommands, cancellationToken);
             return nativeCommands;
+        }
+
+
+        public async Task<string?> GetStoreId()
+        {
+            var gistIds = await repository.GetList<string?>(GistsCollectionName);
+            return gistIds.FirstOrDefault();
+        }
+
+        public async Task<bool> SetStoreId(string id)
+        {
+            var result = await repository.Add(GistsCollectionName, id);
+            return !string.IsNullOrEmpty(result);
         }
 
         public async Task<Dictionary<string, BaseCommand>> GetAggregatedCommands(CancellationToken cancellationToken)

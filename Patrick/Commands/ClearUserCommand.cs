@@ -24,7 +24,8 @@ namespace Patrick.Commands
             }
 
             if (!user.MentionedUsers.Any())
-                return new CommandResponse(Name, "You must either mention at least one user or supply no arguments for this command to work.");
+                return new CommandResponse(Name,
+                    "You must either mention at least one user or supply no arguments for this command to work.");
 
             var taskList = new List<Task<bool>>();
             foreach(var mentioned in user.MentionedUsers)

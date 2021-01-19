@@ -51,15 +51,7 @@ To start playing, type `!{Name} begin`
                 }
             }
 
-            if (string.IsNullOrEmpty(user.MessageArgument) || game.Status == HangmanGameStatus.Idle)
-            {
-                if (game.Status == HangmanGameStatus.Idle)
-                    return new CommandResponse(Name, "Game not started yet.");
-                else
-                    return new CommandResponse(Name, "No letter or word found.");
-            }
-
-            var action = GetAction(user.MessageArgument);
+            var action = GetAction(user.MessageArgument, game.Status);
 
             switch (action)
             {
@@ -101,8 +93,7 @@ To start playing, type `!{Name} begin`
                 case HangmanUserAction.Undefined:
                     {
                         if (game.Status != HangmanGameStatus.Started)
-                            return new CommandResponse(Name,
-                                GenerateDefaultResponse(game, action, "You're playing wrong homie!"));
+                            return new CommandResponse(Name, $"Game not started yet. Type `!{Name} begin` to start.");
                         else
                             return new CommandResponse(Name,
                                 GenerateDefaultResponse(game, action, "Hmm..."));
@@ -191,7 +182,7 @@ Participant's score:
 ";
         }
 
-        private static HangmanUserAction GetAction(string? text)
+        private static HangmanUserAction GetAction(string? text, HangmanGameStatus status)
         {
             if (string.IsNullOrEmpty(text))
                 return HangmanUserAction.Undefined;
@@ -206,9 +197,16 @@ Participant's score:
                 return HangmanUserAction.Surrender;
 
             if (text.Length > 1)
-                return HangmanUserAction.Solution;
+            {
+                if (status == HangmanGameStatus.Idle)
+                    return HangmanUserAction.Undefined;
+                else
+                    return HangmanUserAction.Solution;
+            }
 
-            return HangmanUserAction.Guess;
+            return status == HangmanGameStatus.Idle ?
+                HangmanUserAction.Undefined :
+                HangmanUserAction.Guess;
         }
 
         enum HangmanUserAction

@@ -10,6 +10,7 @@
         }
         public string? Message { get; }
         public string CommandName { get; }
+        public bool UseEmbed { get; set; }
         public (string tag, string token)? MessageEnclosure { get; set; }
     }
 }

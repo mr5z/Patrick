@@ -7,6 +7,8 @@ namespace Patrick.Services
 {
     interface ICommandStore
     {
+        Task<string?> GetStoreId();
+        Task<bool> SetStoreId(string id);
         Task<string?> AddCustomCommand(CustomCommand command, CancellationToken cancellationToken = default);
         Task<bool> RemoveCustomCommand(CustomCommand command, CancellationToken cancellationToken = default);
         Task<bool> UpdateCustomCommand(CustomCommand command, CancellationToken cancellationToken = default);

@@ -14,6 +14,7 @@ namespace Patrick
         {
             var stream = File.OpenRead("config.json");
             var appConfig = await AppConfiguration.LoadFrom(stream);
+            var audioService = new AudioService();
 
             var serviceCollection = new ServiceCollection();
             var serviceProvider = serviceCollection
@@ -21,12 +22,15 @@ namespace Patrick
                 .AddSingleton<IRepository>(_ => new MonkeyCacheRepository("Patrick"))
                 .AddSingleton<IAppConfigProvider>(_ => new AppConfigProvider(appConfig!))
                 .AddSingleton<IServiceCollection>(_ => serviceCollection)
+                .AddSingleton<IAudioService>(_ => audioService)
                 .AddSingleton<ICommandStore, CommandStore>()
                 .AddSingleton<IHttpService, HttpService>()
                 .AddTransient<IChatService, DiscordService>()
                 .AddTransient<ICommandParser, CommandParser>()
                 .AddTransient<IUserService, UserService>()
                 .AddTransient<IUserFactory, DiscordUserFactory>()
+                .AddTransient<IGistGithubService, GistGithubService>()
+                .AddTransient<ICredentialStore, CredentialStore>()
                 .BuildServiceProvider();
 
             return serviceProvider!;

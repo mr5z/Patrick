@@ -26,7 +26,7 @@ namespace Patrick.Commands
 
 **Author**: {Author ?? "Admin"}
 **Required roles**: {RoleHelper.GenerateEmojiRoles(RoleRequirement)}
-";
+".Trim();
         public bool IsNative { get; protected set; } = true;
         public string? OldArguments { get; set; }
         public string? NewArguments { get; set; }

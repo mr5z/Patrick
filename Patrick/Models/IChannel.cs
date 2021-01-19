@@ -6,6 +6,8 @@ namespace Patrick.Models
 {
     interface IChannel
     {
+        ulong Id { get; }
+        Task<bool> SendMessage(CommandResponse response);
         Task<IReadOnlyCollection<IUser>> GetActiveUsers(CancellationToken cancellationToken = default);
         Task<IUser?> FindUser(ulong userId, CancellationToken cancellationToken = default);
         Task<IReadOnlyCollection<IChannelMessage>> GetMessages(int count, CancellationToken cancellationToken = default);

@@ -1,4 +1,5 @@
-﻿using Jint;
+﻿using Esprima;
+using Jint;
 using Patrick.Models;
 using System;
 using System.Threading.Tasks;
@@ -8,8 +9,6 @@ namespace Patrick.Commands
     class JavascriptCommand : BaseCommand
     {
         private const string CallbackName = "___log___";
-
-        private readonly Engine javascriptEngine = new Engine();
 
         public JavascriptCommand() : base("js")
         {
@@ -29,11 +28,12 @@ namespace Patrick.Commands
                 tcs.TrySetResult(result);
             };
 
-            javascriptEngine.SetValue(CallbackName, callback);
+            var engine = new Engine()
+                .SetValue(CallbackName, callback);
 
             try
             {
-                javascriptEngine.Execute($"{CallbackName}({user.MessageArgument})", new Jint.Parser.ParserOptions
+                engine.Execute($"{CallbackName}({user.MessageArgument})", new ParserOptions
                 {
                     Comment = true,
                     Tokens = true,

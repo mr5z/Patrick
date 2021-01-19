@@ -27,6 +27,11 @@ namespace Patrick.Helpers
 			return dictionary.ToObject<T>();
 		}
 
+		public static IDictionary<string, string> ToDictionary(Uri absoluteUri)
+		{
+			return ToDictionary(absoluteUri.Query);
+		}
+
 		public static IDictionary<string, string> ToDictionary(string queryString)
 		{
 			var keyValue = HttpUtility.ParseQueryString(queryString);

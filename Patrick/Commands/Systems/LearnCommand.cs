@@ -40,7 +40,7 @@ For URL format:
   • **-m** / **--method** - Part of HTTP. Values can be either `get` or `post` atm
   • **-c** / **--content** - Is an HTTP header Content-Type. The values can be either of these three: `json`, `form`, `multi`
   • **-p** / **--path** - Is a JSON Path
-";
+".Trim();
         }
 
         internal override async Task<CommandResponse> PerformAction(IUser user)
@@ -56,11 +56,7 @@ For URL format:
 
             var component = argument.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             var name = component.First();
-            var args = string.Empty;
-            if (component.Length > 1)
-            {
-                args = component.Last();
-            }
+            var args = component.Length > 1 ? component.Last() : string.Empty;
             var customCommand = new CustomCommand(name)
             {
                 OldArguments = args,

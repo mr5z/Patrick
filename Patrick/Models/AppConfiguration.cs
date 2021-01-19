@@ -13,5 +13,7 @@ namespace Patrick.Models
         }
         [JsonPropertyName("Discord")]
         public DiscordModel? Discord { get; set; }
+        [JsonPropertyName("GitHub")]
+        public GitHubModel? GitHub { get; set; }
     }
 }

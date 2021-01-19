@@ -7,6 +7,8 @@ namespace Patrick.Models.Implementation
 {
     class MockChannel : IChannel
     {
+        public ulong Id { get; }
+
         public Task<bool> DeleteMessage(ulong messageId, CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
@@ -27,6 +29,11 @@ namespace Patrick.Models.Implementation
         {
             var result = Enumerable.Empty<IChannelMessage>();
             return await Task.FromResult(result.ToList());
+        }
+
+        public Task<bool> SendMessage(CommandResponse response)
+        {
+            return Task.FromResult(true);
         }
     }
 }

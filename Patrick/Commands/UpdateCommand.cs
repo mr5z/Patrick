@@ -23,7 +23,7 @@ namespace Patrick.Commands
 
 • **-u** / **--usage** - A text providing how to use the custom command. Can be enclosed within ' or "" (single or double quotes).
 • **-d** / **--description** - A text providing some info about the custom command. Can be enclosed within ' or "" (single or double quotes).
-";
+".Trim();
         }
 
         internal override async Task<CommandResponse> PerformAction(IUser user)

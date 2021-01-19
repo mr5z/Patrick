@@ -15,7 +15,7 @@ namespace Patrick.Commands
             Usage = @$"
 To use, type `!{Name} [id <message ID>]|[<count>]`
 By default, count is set to 10 if you didn't specify an argument.
-";
+".Trim();
         }
 
         internal override async Task<CommandResponse> PerformAction(IUser user)

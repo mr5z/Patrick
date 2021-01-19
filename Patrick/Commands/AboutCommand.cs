@@ -13,7 +13,7 @@ namespace Patrick.Commands
             this.commandParser = commandParser;
 
             Description = "This is a bot.";
-            Usage = $"To learn more about specific commands, type: !{Name} *[command_name]*";
+            Usage = $"To learn more about specific commands, type: !{Name} *[command_name]*. Example `!about list`";
             UseEmbed = true;
         }
 

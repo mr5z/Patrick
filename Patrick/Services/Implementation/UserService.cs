@@ -1,5 +1,4 @@
-﻿using Patrick.Enums;
-using Patrick.Models;
+﻿using Patrick.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;

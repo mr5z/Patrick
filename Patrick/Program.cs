@@ -10,7 +10,7 @@ namespace Patrick
         static async Task Main(string[] args)
         {
             var serviceProvider = await Bootstrap.Initialize(args);
-            var chatService = serviceProvider.GetService<IChatService>();
+            var chatService = serviceProvider.GetRequiredService<IChatService>();
 
             if (chatService != null)
             {

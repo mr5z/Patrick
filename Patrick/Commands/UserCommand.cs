@@ -23,7 +23,7 @@ namespace Patrick.Commands
 Options:
 -f / --find     <name> Find the user with supplied argument.
 -l / --list     <active/inactive/all> List the users based on the supplied argument.
-";
+".Trim();
         }
 
         internal override async Task<CommandResponse> PerformAction(IUser user)
@@ -54,10 +54,8 @@ Options:
             {
                 var activeUsers = await user.CurrentChannel.GetActiveUsers();
                 var cachedUsers = await userService.GetUsers();
-                Func<IUser, bool> comparer = (user) =>
-                {
-                    return user.Fullname?.Contains(helper.NameToFind, StringComparison.OrdinalIgnoreCase) ?? false;
-                };
+                bool comparer(IUser user) =>
+                    user.Fullname?.Contains(helper.NameToFind, StringComparison.OrdinalIgnoreCase) ?? false;
                 var cachedUser = cachedUsers.FirstOrDefault(comparer);
                 var snowflake = activeUsers.FirstOrDefault(comparer) ?? cachedUser;
 
