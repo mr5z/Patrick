@@ -9,6 +9,8 @@ namespace Patrick.Models.Implementation
     {
         public ulong Id { get; }
 
+        public bool IsAudible => false;
+
         public Task<bool> DeleteMessage(ulong messageId, CancellationToken cancellationToken)
         {
             return Task.FromResult(true);

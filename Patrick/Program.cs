@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Patrick.Services;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Patrick
@@ -11,22 +12,22 @@ namespace Patrick
         {
             var serviceProvider = await Bootstrap.Initialize(args);
             var chatService = serviceProvider.GetRequiredService<IChatService>();
-
+            var cts = new CancellationTokenSource();
             if (chatService != null)
             {
-                await chatService.Start();
+                try
+                {
+                    await Task.Run(chatService.Start, cts.Token);
+                }
+                catch (OperationCanceledException) { }
             }
             else
             {
                 Console.WriteLine("Cannot instantiate ChatService! Quitting...");
-                Console.ReadKey();
-                return;
             }
 
-            while (true)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(10));
-            }
+            Console.ReadKey();
+            cts.Cancel();
         }
     }
 }

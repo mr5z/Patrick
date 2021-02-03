@@ -36,17 +36,19 @@ For plain text format:
 For URL format:
 - The succeeding argument is assummed to be a supplement to build the API.
 - The following can be use to construct the parameters:
-  • **-t** / **--type** - Response type. Values can be either `ignore` or `consume`
-  • **-m** / **--method** - Part of HTTP. Values can be either `get` or `post` atm
-  • **-c** / **--content** - Is an HTTP header Content-Type. The values can be either of these three: `json`, `form`, `multi`
-  • **-p** / **--path** - Is a JSON Path
+  • **-t** / **--type** Response type. Values can be either `ignore` or `consume`
+  • **-m** / **--method** Part of HTTP. Values can be either `get` or `post` atm
+  • **-c** / **--content** Is an HTTP header Content-Type. The values can be either of these three: `json`, `form`, `multi`
+  • **-p** / **--path** Is a JSON Path
+  • **-i** / **--input** Is the expected input type format. Can be either `plain` or `json` atm
+  • **-a** / **--alias** Add alias to the response. It's similar to how permalink markup works: [Title](https://example.com)
 ".Trim();
         }
 
         internal override async Task<CommandResponse> PerformAction(IUser user)
         {
             var argument = user.MessageArgument;
-            if (argument == null)
+            if (string.IsNullOrEmpty(argument))
                 return new CommandResponse(Name, $"Argument is null");
 
             var command = await commandParser.Parse(argument, false);

@@ -2,6 +2,7 @@
 using Jint;
 using Patrick.Models;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Patrick.Commands

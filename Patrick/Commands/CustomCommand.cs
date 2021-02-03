@@ -17,10 +17,11 @@ namespace Patrick.Commands
     // this is a fucking mess!
     class CustomCommand : BaseCommand
     {
-        enum Parameters { Alias, Type, Method, Content, Path }
+        enum Parameters { Alias, Type, Method, Content, Path, Input }
         enum ResponseType { Consume, Ignore }
         enum Method { Get, Post }
         enum ContentType { Json, Form, Multi }
+        enum InputType { Plain, Json }
 
 		private class OptionA
         {
@@ -34,6 +35,7 @@ namespace Patrick.Commands
 			public ResponseType ResponseType => ParseResponseType(options.ContainsKey(Parameters.Type) ? options[Parameters.Type] : null);
 			public Method Method => ParseMethod(options.ContainsKey(Parameters.Method) ? options[Parameters.Method] : null);
 			public ContentType ContentType => ParseContentType(options.ContainsKey(Parameters.Content) ? options[Parameters.Content] : null);
+			public InputType InputType => ParseInputType(options.ContainsKey(Parameters.Input) ? options[Parameters.Input] : null);
 		}
 
 		private readonly IHttpService? httpService;
@@ -73,7 +75,8 @@ namespace Patrick.Commands
 					new CliHelper.Option<Parameters>(Parameters.Content, "-c", "--content"),
 					new CliHelper.Option<Parameters>(Parameters.Method, "-m", "--method"),
 					new CliHelper.Option<Parameters>(Parameters.Type, "-t", "--type"),
-					new CliHelper.Option<Parameters>(Parameters.Path, "-p", "--path")
+					new CliHelper.Option<Parameters>(Parameters.Path, "-p", "--path"),
+					new CliHelper.Option<Parameters>(Parameters.Input, "-i", "--input")
 				);
 				var opt = new OptionA(options);
 				var argsCount = Regex.Matches(api, "({\\d+})").Count;
@@ -89,7 +92,8 @@ namespace Patrick.Commands
 					return new CommandResponse(Name, 
 						$"Args count mismatch. Expecting {argsCount}, found {args.Length}");
 
-				args = args.Select(HttpUtility.UrlEncode).ToArray();
+				if (opt.InputType == InputType.Plain)
+					args = args.Select(HttpUtility.UrlEncode).ToArray();
 				api = HttpUtility.HtmlDecode(string.Format(api, args));
 
 				if (opt.Method == Method.Get && opt.ResponseType == ResponseType.Ignore)
@@ -104,7 +108,7 @@ namespace Patrick.Commands
 				try
                 {
 					var cts = new CancellationTokenSource(timeout);
-					var apiResponse = await Fetch(api, opt.Method, opt.ContentType, cts.Token);
+					var apiResponse = await Fetch(api, opt.Method, opt.ContentType, opt.InputType, cts.Token);
 					var stringContent = apiResponse ?? "{}";
 					if (string.IsNullOrEmpty(opt.JsonPath))
                     {
@@ -142,7 +146,7 @@ namespace Patrick.Commands
 			return null;
 		}
 
-		private async Task<string?> Fetch(string api, Method method, ContentType contentType, CancellationToken cancellationToken)
+		private async Task<string?> Fetch(string api, Method method, ContentType contentType, InputType inputType, CancellationToken cancellationToken)
         {
 			var httpService = this.httpService!;
 
@@ -156,7 +160,9 @@ namespace Patrick.Commands
 						{
 							case ContentType.Json:
 							default:
-								var d1 = components.Length > 1 ? QueryStringHelper.ToObject<object>(components.Last()) : null;
+								var d1 = inputType == InputType.Plain ? 
+										(components.Length > 1 ? QueryStringHelper.ToObject<object>(components.Last()) : null) :
+										(components.Length > 1 ? components.Last() : null);
 								var r1 = await httpService.PostJson<object>(new Uri(domain), d1?.ToString(), cancellationToken!);
 								return r1?.ToString();
 							case ContentType.Form:
@@ -206,6 +212,16 @@ namespace Patrick.Commands
 				"form" => ContentType.Form,
 				"multi" => ContentType.Multi,
 				_ => ContentType.Json
+			};
+		}
+
+		private static InputType ParseInputType(string? value)
+		{
+			return value switch
+			{
+				"json" => InputType.Json,
+				"plain" => InputType.Plain,
+				_ => InputType.Plain
 			};
 		}
 

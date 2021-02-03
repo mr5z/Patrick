@@ -17,8 +17,8 @@ namespace Patrick.Services.Implementation
         {
             lavaLink = new LavalinkNode(new LavalinkNodeOptions
             {
-                RestUri = "http://localhost:8090/",
-                WebSocketUri = "ws://localhost:8090/",
+                RestUri = "http://0.0.0.0:2333/",
+                WebSocketUri = "ws://0.0.0.0:2333/",
                 Password = "youshallnotpass",
                 AllowResuming = true,
                 BufferSize = 1024 * 1024, // 1 MiB
@@ -27,7 +27,7 @@ namespace Patrick.Services.Implementation
                 DebugPayloads = true
             }, new DiscordClientWrapper(client));
 
-            client.Ready += Client_Ready;
+            _ = Client_Ready();
         }
 
         public async Task Join(ulong guildId, ulong voiceChannelId, string youtubeLink)

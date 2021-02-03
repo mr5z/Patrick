@@ -44,7 +44,50 @@ namespace Patrick.Services.Implementation
 
             serviceCollection.AddTransient(typeof(CustomCommand));
             serviceProvider = serviceCollection.BuildServiceProvider();
+            socketClient.Ready += SocketClient_Ready;
             socketClient.MessageReceived += Client_MessageReceived;
+            socketClient.Disconnected += SocketClient_Disconnected;
+            socketClient.Log += SocketClient_Log;
+        }
+
+        private static void Log(ConsoleColor color, string message, params object[] args)
+        {
+            if (string.IsNullOrEmpty(message))
+                return;
+            Console.ForegroundColor = color;
+            Console.WriteLine(message, args);
+        }
+
+        private Task SocketClient_Ready()
+        {
+            Log(ConsoleColor.White, "I'm alive");
+            audioService.Configure(socketClient);
+            return Task.CompletedTask;
+        }
+
+        private Task SocketClient_Log(LogMessage arg)
+        {
+            var color = arg.Severity switch
+            {
+                LogSeverity.Critical => ConsoleColor.Red,
+                LogSeverity.Error => ConsoleColor.DarkRed,
+                LogSeverity.Warning => ConsoleColor.Yellow,
+                LogSeverity.Info => ConsoleColor.Green,
+                LogSeverity.Verbose => ConsoleColor.White,
+                _ => ConsoleColor.White
+            };
+            Log(color, arg.Message);
+            return Task.CompletedTask;
+        }
+
+        private async Task SocketClient_Disconnected(Exception arg)
+        {
+            Log(ConsoleColor.Red, "Disconnected. Printing stacktrace...");
+            Log(ConsoleColor.White, arg.StackTrace ?? "<empty>");
+            int retryDelay = 5;
+            Log(ConsoleColor.Yellow, "Retrying to connect after {0} seconds");
+            await Task.Delay(TimeSpan.FromSeconds(retryDelay));
+            await Start();
         }
 
         public async Task Start()
@@ -52,23 +95,21 @@ namespace Patrick.Services.Implementation
             var token = configProvider.Configuration.Discord!.Token!;
             await socketClient.LoginAsync(TokenType.Bot, token);
             await socketClient.StartAsync();
-            audioService.Configure(socketClient);
 
-            Console.WriteLine("I'm alive!");
-            if (KnownChannels != null)
-            {
-                foreach(var serverId in KnownChannels)
-                {
-                    var channel = socketClient.GetChannel(serverId);
-                    if (channel != null && channel is SocketTextChannel textChannel)
-                    {
-                        await textChannel.SendMessageAsync("I'm alive!");
-                    }
-                }
-            }
+            //if (KnownChannels != null)
+            //{
+            //    foreach(var serverId in KnownChannels)
+            //    {
+            //        var channel = socketClient.GetChannel(serverId);
+            //        if (channel != null && channel is SocketTextChannel textChannel)
+            //        {
+            //            await textChannel.SendMessageAsync("I'm alive!");
+            //        }
+            //    }
+            //}
         }
 
-        private async Task Client_MessageReceived(SocketMessage arg)
+        private async Task MessageReceived(SocketMessage arg)
         {
             if (arg.Author.Id == BotId)
                 return;
@@ -78,7 +119,7 @@ namespace Patrick.Services.Implementation
             if (!message.StartsWith(TriggerText))
                 return;
 
-            Console.WriteLine("{0} -> {1} say, {2}", DateTime.Now, arg.Author.Username, arg.Content);
+            Log(ConsoleColor.White, "{0} -> {1} say, {2}", DateTime.Now, arg.Author.Username, arg.Content);
 
             try
             {
@@ -101,14 +142,21 @@ namespace Patrick.Services.Implementation
             if (command == null)
             {
                 var result = await arg.Channel.SendMessageAsync(RandomDefaultResponse());
-                //await AddReactionText("Deleting in 5 seconds", result);
+                //try
+                //{
+                //    await AddReactionText("123", result);
+                //}
+                //catch (Exception ex)
+                //{
+                //    var msg = ex.Message;
+                //}
                 _ = Task.Delay(TimeSpan.FromSeconds(10)).ContinueWith(t => result.DeleteAsync());
                 return;
             }
 
             var user = await userService.Find(arg.Author.Id);
 
-            var currentRole = KnownUsers.Contains(arg.Author.Id) ? 
+            var currentRole = KnownUsers.Contains(arg.Author.Id) ?
                 Role.FullAccess : user?.Role ?? DefaultRole;
 
             if (!currentRole.HasFlag(command.RoleRequirement))
@@ -130,7 +178,11 @@ namespace Patrick.Services.Implementation
                 {
                     Fullname = e.Username,
                     SessionId = arg.Channel.Id
-                }).ToList()
+                }).ToList(),
+                IsAudible = (arg.Author is SocketGuildUser u &&
+                            u.VoiceChannel != null &&
+                            u.VoiceState.HasValue &&
+                            !u.VoiceState.Value.IsSelfDeafened)
             };
 
             var response = await command.PerformAction(discordUser);
@@ -138,50 +190,69 @@ namespace Patrick.Services.Implementation
             await RespondToChannel(arg.Channel, response, command.UseEmbed);
         }
 
+        private Task Client_MessageReceived(SocketMessage arg)
+        {
+            if (arg.Author.Id != BotId)
+            {
+                _ = Task.Run(() => MessageReceived(arg));
+            }
+            return Task.CompletedTask;
+        }
+
         private static async Task AddReactionText(string reactionText, RestUserMessage message)
         {
-            //await message.AddReactionAsync(Emote.Parse("<:regional_indicator_a:bbe8ae762f831966587a35010ed46f67>"));
-            //return;
             foreach (var c in reactionText)
             {
                 if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z')
                 {
-                    var react = $"<:regional_indicator_{char.ToLower(c)}:>";
-                    Emote? emote = null;
-                    try
-                    {
-                        emote = Emote.Parse(react);
-                    }
-                    catch (Exception ex)
-                    {
-                        var msg = ex.Message;
-                        continue;
-                    }
-                    await message.AddReactionAsync(Emote.Parse(react));
+                    var react = LetterToEmoji(c);
+                    await message.AddReactionAsync(new Emoji(react));
                 }
                 else if (c >= '0' && c <= '9')
-                    await message.AddReactionAsync(Emote.Parse($":{NumberToWord(c - '0')}:"));
-                else if (c == ' ')
-                    await message.AddReactionAsync(Emote.Parse(":heavy_minus_sign:"));
+                    await message.AddReactionAsync(new Emoji(NumberToEmoji(c - '0')));
             }
         }
 
-        private static string NumberToWord(int number)
+        private static string NumberToEmoji(int number)
         {
-            var dictionary = new Dictionary<int, string>
+            var code = 0x1f100 + number;
+            var result = char.ConvertFromUtf32(code).ToString();
+            return result;
+        }
+
+        private static string LetterToEmoji(char letter)
+        {
+            var dictionary = new Dictionary<char, string>
             {
-                [0] = "zero",
-                [1] = "one",
-                [2] = "two",
-                [3] = "three",
-                [4] = "four",
-                [5] = "five",
-                [6] = "six",
-                [7] = "seven",
-                [8] = "eigth",
-                [9] = "nine"
+                ['A'] = "\u1F1E6",
+                ['B'] = "\u1F1E7",
+                ['C'] = "\u1F1E8",
+                ['D'] = "\u1F1E9",
+                ['E'] = "\u1F1EA",
+                ['F'] = "\u1F1EB",
+                ['G'] = "\u1F1EC",
+                ['H'] = "\u1F1EE",
+                ['I'] = "\u1F1EF",
+                ['J'] = "\u1F1F0",
+                ['K'] = "\u1F1F1",
+                ['L'] = "\u1F1F2",
+                ['M'] = "\u1F1F3",
+                ['N'] = "\u1F1F4",
+                ['O'] = "\u1F1F5",
+                ['P'] = "\u1F1F6",
+                ['Q'] = "\u1F1F7",
+                ['R'] = "\u1F1F8",
+                ['S'] = "\u1F1F9",
+                ['T'] = "\u1F1FA",
+                ['U'] = "\u1F1FB",
+                ['V'] = "\u1F1FC",
+                ['W'] = "\u1F1FD",
+                ['X'] = "\u1F1FE",
+                ['Y'] = "\u1F200",
+                ['Z'] = "\u1F201"
             };
-            return dictionary[number];
+
+            return dictionary[char.ToUpper(letter)];
         }
 
         private async Task RespondToChannel(ISocketMessageChannel channel, CommandResponse response, bool isEmbed)

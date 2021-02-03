@@ -16,6 +16,7 @@ namespace Patrick.Models.Implementation
         public string? Fullname { get; set; }
         public string? MessageArgument { get; set; }
         public ulong SessionId { get; set; }
+        public bool IsAudible { get; set; }
         public Role Role { get; set; }
         public IChannel CurrentChannel { get; set; }
         public UserStatus Status { get; set; }

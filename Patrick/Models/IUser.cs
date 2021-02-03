@@ -10,6 +10,7 @@ namespace Patrick.Models
         string? Fullname { get; set; }
         string? MessageArgument { get; set; }
         ulong SessionId { get; set; }
+        bool IsAudible { get; set; }
         Role Role { get; set; }
         UserStatus Status { get; set; }
         IReadOnlyList<IUser> MentionedUsers { get; set; }

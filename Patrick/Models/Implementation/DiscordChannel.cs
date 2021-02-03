@@ -14,6 +14,8 @@ namespace Patrick.Models.Implementation
 
         public ulong Id { get; }
 
+        public bool IsAudible => false;
+
         public DiscordChannel(ISocketMessageChannel channel)
         {
             this.channel = channel;
@@ -43,7 +45,7 @@ namespace Patrick.Models.Implementation
 
         public async Task<IReadOnlyCollection<IUser>> GetActiveUsers(CancellationToken cancellationToken)
         {
-            var users = await channel.GetUsersAsync(mode: CacheMode.AllowDownload, options: new RequestOptions
+            var users = await channel.GetUsersAsync(options: new RequestOptions
             {
                 CancelToken = cancellationToken
             }).FlattenAsync();
@@ -53,7 +55,7 @@ namespace Patrick.Models.Implementation
                 Fullname = e.Username,
                 CurrentChannel = this,
                 SessionId = channel.Id,
-                Status = e.Status != UserStatus.Offline ? Enums.UserStatus.Online : Enums.UserStatus.Offline
+                Status = e.Status == UserStatus.Offline ? Enums.UserStatus.Offline : Enums.UserStatus.Online
             }));
         }
 
