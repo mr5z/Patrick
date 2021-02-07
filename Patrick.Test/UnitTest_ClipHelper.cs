@@ -21,7 +21,7 @@ namespace Patrick.Test
             var question = "Testing";
             var opt = "'a b c' '1 2 3'";
             var options = CliHelper.ParseOptions($"-c {context} -o {opt} -q {question}",
-                new CliHelper.Option<Parameter>(Parameter.Context, "-c", "-context"),
+                new CliHelper.Option<Parameter>(Parameter.Context, "-c", "--context"),
                 new CliHelper.Option<Parameter>(Parameter.Question, "-q", "--question"),
                 new CliHelper.Option<Parameter>(Parameter.Options, "-o", "--options")
             );
@@ -29,7 +29,7 @@ namespace Patrick.Test
             var a = options[Parameter.Options];
             Assert.AreEqual(options[Parameter.Context].Single(), context);
             Assert.AreEqual(options[Parameter.Question].Single(), question);
-            Assert.IsTrue(options[Parameter.Options].SequenceEqual(new string[] { "a b c", "1 2 3" }));
+            Assert.IsTrue(options[Parameter.Options].SequenceEqual(new[] { "a b c", "1 2 3" }));
         }
     }
 }
