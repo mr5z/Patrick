@@ -16,10 +16,10 @@ namespace Patrick.Services
 		Task<T?> PostJson<T>(Uri absolutePath, object? data = null, CancellationToken cancellationToken = default);
 		Task<T?> PostUrlEncoded<T>(string relativePath, IDictionary<string, string?> data, CancellationToken cancellationToken = default);
 		Task<T?> PostUrlEncoded<T>(Uri absolutePath, IDictionary<string, string?> data, CancellationToken cancellationToken = default);
-		Task<T?> PostMultipart<T>(string relativePath, IDictionary<string, object> data, CancellationToken cancellationToken = default);
-		Task<T?> PostMultipart<T>(Uri absolutePath, IDictionary<string, object> data, CancellationToken cancellationToken = default);
+		Task<T?> PostMultipart<T>(string relativePath, IDictionary<string, object?> data, CancellationToken cancellationToken = default);
+		Task<T?> PostMultipart<T>(Uri absolutePath, IDictionary<string, object?> data, CancellationToken cancellationToken = default);
 		Task<T?> PutForm<T>(string relativePath, IDictionary<string, string?> data, CancellationToken cancellationToken = default);
 		Task<T?> PutForm<T>(Uri absolutePath, IDictionary<string, string?> data, CancellationToken cancellationToken = default);
-		Task<HttpResponseMessage?> Send(Uri absolutePath, HttpMethod method, HttpContent data, CancellationToken cancellationToken = default);
+		Task<HttpResponseMessage> Send(Uri absolutePath, HttpMethod method, HttpContent data, CancellationToken cancellationToken = default);
 	}
 }

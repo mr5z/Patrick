@@ -27,12 +27,12 @@ namespace Patrick.Helpers
 			return dictionary.ToObject<T>();
 		}
 
-		public static IDictionary<string, string> ToDictionary(Uri absoluteUri)
+		public static IDictionary<string, string?> ToDictionary(Uri absoluteUri)
 		{
 			return ToDictionary(absoluteUri.Query);
 		}
 
-		public static IDictionary<string, string> ToDictionary(string queryString)
+		public static IDictionary<string, string?> ToDictionary(string queryString)
 		{
 			var keyValue = HttpUtility.ParseQueryString(queryString);
 			return ToDictionary(keyValue);
@@ -41,10 +41,10 @@ namespace Patrick.Helpers
 		private static bool IsRelativeUri(Uri uri) =>
 			!Uri.TryCreate(uri.OriginalString, UriKind.Absolute, out var _);
 
-		private static IDictionary<string, string> ToDictionary(NameValueCollection nameValue) =>
+		private static IDictionary<string, string?> ToDictionary(NameValueCollection nameValue) =>
 			nameValue
 				.AllKeys
 				.Where(e => !string.IsNullOrEmpty(e))
-				.ToDictionary(key => key, value => nameValue[value]);
+				.ToDictionary(key => key!, value => nameValue[value]);
 	}
 }

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Patrick.Helpers
 {
-    static class CliHelper
+    public static class CliHelper
 	{
 		public class Option<TKey> where TKey : struct
 		{

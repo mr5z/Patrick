@@ -9,6 +9,7 @@ using Patrick.Models.Implementation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,7 +24,6 @@ namespace Patrick.Services.Implementation
         private readonly IServiceProvider serviceProvider;
         private readonly IUserService userService;
         private readonly IAudioService audioService;
-        private readonly IGistGithubService gistGithubService;
 
         private readonly DiscordSocketClient socketClient = new DiscordSocketClient();
         private readonly Color preferredColor = new Color(255, 144, 148);
@@ -33,14 +33,12 @@ namespace Patrick.Services.Implementation
             ICommandParser commandParser,
             IServiceCollection serviceCollection,
             IUserService userService,
-            IAudioService audioService,
-            IGistGithubService gistGithubService)
+            IAudioService audioService)
         {
             this.configProvider = configProvider;
             this.commandParser = commandParser;
             this.userService = userService;
             this.audioService = audioService;
-            this.gistGithubService = gistGithubService;
 
             serviceCollection.AddTransient(typeof(CustomCommand));
             serviceProvider = serviceCollection.BuildServiceProvider();
@@ -109,6 +107,18 @@ namespace Patrick.Services.Implementation
             //}
         }
 
+        private static string ToAlternatingCase(string words)
+        {
+            var newWord = new StringBuilder();
+            for(var i = 0;i < words.Length; ++i)
+            {
+                var c = words[i];
+                c = i % 2 == 0 ? char.ToUpper(c) : char.ToLower(c);
+                newWord.Append(c);
+            }
+            return newWord.ToString();
+        }
+
         private async Task MessageReceived(SocketMessage arg)
         {
             if (arg.Author.Id == BotId)
@@ -119,16 +129,7 @@ namespace Patrick.Services.Implementation
             if (!message.StartsWith(TriggerText))
                 return;
 
-            Log(ConsoleColor.White, "{0} -> {1} say, {2}", DateTime.Now, arg.Author.Username, arg.Content);
-
-            try
-            {
-                //await gistGithubService.Authenticate();
-            }
-            catch (Exception ex)
-            {
-                var msg = ex.Message;
-            }
+            Log(ConsoleColor.White, "{0} -> {1} say, {2}", DateTime.Now, arg.Author.Username, message);
 
             try
             {
@@ -336,7 +337,7 @@ namespace Patrick.Services.Implementation
 
         private DiscordModel Discord => configProvider.Configuration!.Discord!;
         public ulong[]? KnownChannels => Discord.KnownChannels;
-        public ulong[]? KnownUsers => Discord.KnownUsers;
+        public ulong[] KnownUsers => Discord.KnownUsers!;
         public ulong BotId => Discord.BotId;
         public string TriggerText => Discord.TriggerText!;
         public Dictionary<string, string> Icons => Discord.Icons!;

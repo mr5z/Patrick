@@ -126,7 +126,7 @@ To start playing, type `!{Name} begin`
 
                 case HangmanUserAction.Surrender:
                     {
-                        var solution = await game.Surrender(user.MessageArgument);
+                        var solution = await game.Surrender();
 
                         if (string.IsNullOrEmpty(solution))
                             return new CommandResponse(Name,
@@ -284,7 +284,7 @@ Participant's score:
                 try
                 {
                     var response = await httpService.PostJson<HangmanDto>(ApiAddress, 
-                        cancellationToken);
+                        cancellationToken: cancellationToken);
 
                     if (response == null)
                         return false;
@@ -348,7 +348,7 @@ Participant's score:
                 return result ? HangmanResponseStatus.Correct : HangmanResponseStatus.Wrong;
             }
 
-            public async Task<string?> Surrender(string? text, CancellationToken cancellationToken = default)
+            public async Task<string?> Surrender(CancellationToken cancellationToken = default)
             {
                 var address = $"{ApiAddress.AbsoluteUri}?token={Token}";
                 var response = await httpService.Get<HangmanDto>(new Uri(address),
@@ -368,7 +368,7 @@ Participant's score:
             {
                 try
                 {
-                    var content = new FormUrlEncodedContent(new Dictionary<string, string?>
+                    var content = new FormUrlEncodedContent(new Dictionary<string?, string?>
                     {
                         ["token"] = Token,
                         ["letter"] = letter.ToString()
@@ -377,9 +377,6 @@ Participant's score:
                         HttpMethod.Put,
                         content,
                         cancellationToken: cancellationToken);
-
-                    if (response == null)
-                        return HangmanResponseStatus.Error;
 
                     // I decided to make a more raw way of dealing with HTTP
                     // since I needed the status code ffs.

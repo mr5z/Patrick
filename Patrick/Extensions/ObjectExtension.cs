@@ -6,13 +6,13 @@ namespace Patrick.Extensions
 {
     static class ObjectExtensions
 	{
-		public static T ToObject<T>(this IDictionary<string, object> source)
+		public static T ToObject<T>(this IDictionary<string, object?> source)
 			where T : class, new() => ToObject<T, object>(source);
 
-		public static T ToObject<T>(this IDictionary<string, string> source)
+		public static T ToObject<T>(this IDictionary<string, string?> source)
 			where T : class, new() => ToObject<T, string>(source);
 
-		private static TReturnType ToObject<TReturnType, TValue>(IDictionary<string, TValue> source)
+		private static TReturnType ToObject<TReturnType, TValue>(IDictionary<string, TValue?> source)
 			where TReturnType : class, new()
 		{
 			var obj = new TReturnType();

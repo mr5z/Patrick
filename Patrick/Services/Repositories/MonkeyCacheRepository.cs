@@ -20,7 +20,7 @@ namespace Patrick.Services.Repositories
 			return "1";
 		}
 
-		public async Task<IReadOnlyList<string?>> AddList<T>(string collectionName, IEnumerable<T> values, CancellationToken cancellationToken = default)
+		public async Task<IReadOnlyList<string?>> AddList<T>(string collectionName, IEnumerable<T> values, CancellationToken cancellationToken)
 		{
 			var taskList = new List<Task<string?>>();
 			foreach (var value in values)
@@ -39,7 +39,7 @@ namespace Patrick.Services.Repositories
 			return result;
 		}
 
-		public async Task<bool> Update<T>(string collectionName, string key, T value, CancellationToken cancellationToken = default)
+		public async Task<bool> Update<T>(string collectionName, string key, T value, CancellationToken cancellationToken)
 		{
 			var list = await GetList<T>(collectionName, cancellationToken);
 			var result = list.Remove(value);
