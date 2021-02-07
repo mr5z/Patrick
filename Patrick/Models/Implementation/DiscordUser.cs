@@ -6,10 +6,11 @@ namespace Patrick.Models.Implementation
 {
     class DiscordUser : IUser, IEquatable<DiscordUser?>
     {
-        public DiscordUser(ulong id, IChannel currentChannel)
+        public DiscordUser(ulong id, IChannel currentChannel, IServer currentServer)
         {
             Id = id;
             CurrentChannel = currentChannel;
+            CurrentServer = currentServer;
         }
 
         public ulong Id { get; }
@@ -19,6 +20,7 @@ namespace Patrick.Models.Implementation
         public bool IsAudible { get; set; }
         public Role Role { get; set; }
         public IChannel CurrentChannel { get; set; }
+        public IServer CurrentServer { get; set; }
         public UserStatus Status { get; set; }
         public IReadOnlyList<IUser> MentionedUsers { get; set; } = new List<IUser>();
 

@@ -11,14 +11,18 @@ namespace Patrick.Models.Implementation
     class DiscordChannel : IChannel
     {
         private readonly ISocketMessageChannel channel;
+        private readonly IServer server;
 
         public ulong Id { get; }
 
         public bool IsAudible => false;
 
-        public DiscordChannel(ISocketMessageChannel channel)
+        public string Name => channel.Name;
+
+        public DiscordChannel(ISocketMessageChannel channel, IServer server)
         {
             this.channel = channel;
+            this.server = server;
             Id = channel?.Id ?? 0;
         }
 
@@ -50,7 +54,7 @@ namespace Patrick.Models.Implementation
                 CancelToken = cancellationToken
             }).FlattenAsync();
 
-            return new List<IUser>(users.Select(e => new DiscordUser(e.Id, this)
+            return new List<IUser>(users.Select(e => new DiscordUser(e.Id, this, server)
             {
                 Fullname = e.Username,
                 CurrentChannel = this,

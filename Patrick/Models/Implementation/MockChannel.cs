@@ -11,6 +11,8 @@ namespace Patrick.Models.Implementation
 
         public bool IsAudible => false;
 
+        public string Name => "Mock Channel";
+
         public Task<bool> DeleteMessage(ulong messageId, CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
@@ -18,7 +20,7 @@ namespace Patrick.Models.Implementation
 
         public async Task<IUser?> FindUser(ulong userId, CancellationToken cancellationToken = default)
         {
-            return await Task.FromResult(new DiscordUser(userId, this));
+            return await Task.FromResult(new DiscordUser(userId, this, new MockServer()));
         }
 
         public async Task<IReadOnlyCollection<IUser>> GetActiveUsers(CancellationToken cancellationToken)

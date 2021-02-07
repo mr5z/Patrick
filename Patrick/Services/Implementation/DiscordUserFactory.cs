@@ -7,7 +7,7 @@ namespace Patrick.Services.Implementation
     {
         public IUser Create(ulong userId)
         {
-            return new DiscordUser(userId, new MockChannel());
+            return new DiscordUser(userId, new MockChannel(), new MockServer());
         }
     }
 }

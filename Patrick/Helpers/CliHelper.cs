@@ -74,8 +74,7 @@ namespace Patrick.Helpers
 						if (string.IsNullOrEmpty(entry) ||
 							optionPrefix.Any(e => entry.StartsWith(e, StringComparison.OrdinalIgnoreCase)))
 							break;
-						valueList.Add(entry);
-						_ = entries.Dequeue();
+						valueList.Add(entries.Dequeue());
 					}
 					values[option.Key] = valueList;
 					optionList.Remove(option);

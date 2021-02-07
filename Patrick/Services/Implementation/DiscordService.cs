@@ -168,14 +168,15 @@ namespace Patrick.Services.Implementation
                 return;
             }
 
-            var currentChannel = new DiscordChannel(arg.Channel);
-            var discordUser = new DiscordUser(arg.Author.Id, currentChannel)
+            var currentServer = GetServer(arg);
+            var currentChannel = new DiscordChannel(arg.Channel, currentServer);
+            var discordUser = new DiscordUser(arg.Author.Id, currentChannel, currentServer)
             {
                 Fullname = arg.Author.Username,
                 MessageArgument = command.NewArguments,
                 Role = currentRole,
                 SessionId = arg.Channel.Id,
-                MentionedUsers = arg.MentionedUsers.Select(e => new DiscordUser(e.Id, currentChannel)
+                MentionedUsers = arg.MentionedUsers.Select(e => new DiscordUser(e.Id, currentChannel, currentServer)
                 {
                     Fullname = e.Username,
                     SessionId = arg.Channel.Id
@@ -189,6 +190,18 @@ namespace Patrick.Services.Implementation
             var response = await command.PerformAction(discordUser);
 
             await RespondToChannel(arg.Channel, response, command.UseEmbed);
+        }
+
+        private static IServer GetServer(SocketMessage message)
+        {
+            if (message is SocketUserMessage socketUserMessage)
+            {
+                if (socketUserMessage.Channel is SocketTextChannel textChannel)
+                    return new DiscordServer(textChannel.Guild.Name);
+                if (socketUserMessage.Channel is SocketVoiceChannel voiceChannel)
+                    return new DiscordServer(voiceChannel.Guild.Name);
+            }
+            return new MockServer();
         }
 
         private Task Client_MessageReceived(SocketMessage arg)

@@ -7,6 +7,7 @@ namespace Patrick.Models
     {
         ulong Id { get; }
         IChannel CurrentChannel { get; }
+        IServer CurrentServer { get; }
         string? Fullname { get; set; }
         string? MessageArgument { get; set; }
         ulong SessionId { get; set; }

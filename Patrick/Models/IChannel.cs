@@ -8,6 +8,7 @@ namespace Patrick.Models
     {
         ulong Id { get; }
         bool IsAudible { get; }
+        public string Name { get; }
         Task<bool> SendMessage(CommandResponse response);
         Task<IReadOnlyCollection<IUser>> GetActiveUsers(CancellationToken cancellationToken = default);
         Task<IUser?> FindUser(ulong userId, CancellationToken cancellationToken = default);
