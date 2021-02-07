@@ -29,6 +29,12 @@ namespace Patrick.Test
             var a = options[Parameter.Options];
             Assert.AreEqual(options[Parameter.Context].Single(), context);
             Assert.AreEqual(options[Parameter.Question].Single(), question);
+            Assert.IsTrue(options.TryGetFirst(Parameter.Context, out var _context));
+            Assert.IsTrue(options.TryGetFirst(Parameter.Question, out var _question));
+            Assert.IsTrue(options.TryGetFirst(Parameter.Options, out var _firstOption));
+            Assert.AreEqual(_context, context);
+            Assert.AreEqual(_question, question);
+            Assert.AreEqual(_firstOption, "a b c");
             Assert.IsTrue(options[Parameter.Options].SequenceEqual(new[] { "a b c", "1 2 3" }));
         }
     }
