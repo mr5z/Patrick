@@ -7,6 +7,8 @@ namespace Patrick.Helpers
 {
     public static class CliHelper
 	{
+		public static readonly string[] DefaultOptionPrefies = new[] { "-", "--" };
+
 		public class Option<TKey> where TKey : struct
 		{
 			public Option(TKey key, params string[] values)
@@ -23,11 +25,38 @@ namespace Patrick.Helpers
 			public string?[] Values { get; }
 		}
 
-		public static Dictionary<TKey, string?> ParseOptions<TKey>(string text, params Option<TKey>[] options)
+		public class OptionResult<TKey>
+		{
+			private readonly IDictionary<TKey, IEnumerable<string?>?> options;
+			public OptionResult(IDictionary<TKey, IEnumerable<string?>?> options)
+			{
+				this.options = options;
+			}
+			public IEnumerable<string?> this[TKey key] => options[key]!;
+
+			public bool TryGetFirst(TKey key, out string? value)
+            {
+				if (options.TryGetValue(key, out var values) && values != null)
+                {
+					value = values.First();
+					return true;
+				}
+				value = null;
+				return false;
+            }
+		}
+
+		public static OptionResult<TKey> ParseOptions<TKey>(string text, params Option<TKey>[] options)
+			where TKey : struct, Enum
+		{
+			return ParseOptions(text, DefaultOptionPrefies, options);
+		}
+
+		public static OptionResult<TKey> ParseOptions<TKey>(string text, string[] optionPrefix, params Option<TKey>[] options)
 			where TKey : struct, Enum
 		{
 			const char componentSeparator = ' ';
-			var values = EnumDefaultValues<TKey, string?>();
+			var values = EnumDefaultValues<TKey, IEnumerable<string?>?>();
 			var components = text.Split(componentSeparator, StringSplitOptions.RemoveEmptyEntries);
 			var combinedOptions = CombineOption(components, componentSeparator);
 			var entries = new Queue<string>(combinedOptions);
@@ -38,11 +67,21 @@ namespace Patrick.Helpers
 				var option = optionList.FirstOrDefault(e => e.Values.Contains(entry));
 				if (option != null)
 				{
-					values[option.Key] = entries.Dequeue();
+					var valueList = new List<string?>();
+					while (entries.Count > 0)
+					{
+						entry = entries.Peek();
+						if (string.IsNullOrEmpty(entry) ||
+							optionPrefix.Any(e => entry.StartsWith(e, StringComparison.OrdinalIgnoreCase)))
+							break;
+						valueList.Add(entry);
+						_ = entries.Dequeue();
+					}
+					values[option.Key] = valueList;
 					optionList.Remove(option);
 				}
 			}
-			return values;
+			return new OptionResult<TKey>(values);
 		}
 
 		private static Dictionary<TKey, TValue?> EnumDefaultValues<TKey, TValue>()

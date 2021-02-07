@@ -94,8 +94,8 @@ Closest match with the name __{helper.NameToFind}__:
 
                 return new Helper
                 {
-                    NameToFind = option[Parameters.Find],
-                    StatusToList = option[Parameters.List]
+                    NameToFind = option.TryGetFirst(Parameters.Find, out var nameToFind) ? nameToFind : null,
+                    StatusToList = option.TryGetFirst(Parameters.List, out var statusToList) ? statusToList : null
                 };
             }
 

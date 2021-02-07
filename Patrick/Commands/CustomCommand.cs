@@ -25,17 +25,17 @@ namespace Patrick.Commands
 
 		private class OptionA
         {
-			private readonly Dictionary<Parameters, string?> options;
-            public OptionA(Dictionary<Parameters, string?> options)
+			private readonly CliHelper.OptionResult<Parameters> options;
+            public OptionA(CliHelper.OptionResult<Parameters> options)
             {
 				this.options = options;
             }
-			public string? Alias => options.ContainsKey(Parameters.Alias) ? options[Parameters.Alias] : null;
-			public string? JsonPath => options.ContainsKey(Parameters.Path) ? options[Parameters.Path] : null;
-			public ResponseType ResponseType => ParseResponseType(options.ContainsKey(Parameters.Type) ? options[Parameters.Type] : null);
-			public Method Method => ParseMethod(options.ContainsKey(Parameters.Method) ? options[Parameters.Method] : null);
-			public ContentType ContentType => ParseContentType(options.ContainsKey(Parameters.Content) ? options[Parameters.Content] : null);
-			public InputType InputType => ParseInputType(options.ContainsKey(Parameters.Input) ? options[Parameters.Input] : null);
+			public string? Alias => options.TryGetFirst(Parameters.Alias, out var value) ? value : null;
+			public string? JsonPath => options.TryGetFirst(Parameters.Path, out var value) ? value : null;
+			public ResponseType ResponseType => ParseResponseType(options.TryGetFirst(Parameters.Type, out var value) ? value : null);
+			public Method Method => ParseMethod(options.TryGetFirst(Parameters.Method, out var value) ? value : null);
+			public ContentType ContentType => ParseContentType(options.TryGetFirst(Parameters.Content, out var value) ? value : null);
+			public InputType InputType => ParseInputType(options.TryGetFirst(Parameters.Input, out var value) ? value : null);
 		}
 
 		private readonly IHttpService? httpService;
@@ -69,7 +69,7 @@ namespace Patrick.Commands
             if (Uri.TryCreate(api, UriKind.Absolute, out var uri) &&
                 (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
             {
-				var parameters = oldComponents.Last();
+				var parameters = oldComponents!.Last();
 				var options = CliHelper.ParseOptions(parameters,
 					new CliHelper.Option<Parameters>(Parameters.Alias, "-a", "--alias"),
 					new CliHelper.Option<Parameters>(Parameters.Content, "-c", "--content"),

@@ -73,8 +73,8 @@ namespace Patrick.Commands
 
                 return new Helper(commandName)
                 {
-                    Description = option[Parameters.Description],
-                    Usage = option[Parameters.Usage]
+                    Description = option.TryGetFirst(Parameters.Description, out var description) ? description : null,
+                    Usage = option.TryGetFirst(Parameters.Usage, out var usage) ? usage : null
                 };
             }
         }

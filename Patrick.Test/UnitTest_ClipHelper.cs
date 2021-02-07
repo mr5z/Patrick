@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Patrick.Helpers;
+using System.Linq;
 
 namespace Patrick.Test
 {
@@ -25,8 +26,10 @@ namespace Patrick.Test
                 new CliHelper.Option<Parameter>(Parameter.Options, "-o", "--options")
             );
 
-            Assert.AreEqual(options[Parameter.Context], context);
-            Assert.AreEqual(options[Parameter.Question], question);
+            var a = options[Parameter.Options];
+            Assert.AreEqual(options[Parameter.Context].Single(), context);
+            Assert.AreEqual(options[Parameter.Question].Single(), question);
+            Assert.IsTrue(options[Parameter.Options].SequenceEqual(new string[] { "a b c", "1 2 3" }));
         }
     }
 }

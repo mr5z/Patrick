@@ -48,15 +48,15 @@ __MU__ - Manage Users (wip)
 
             var userToManage = user.MentionedUsers.Single();
 
-            if (!string.IsNullOrEmpty(options[Operation.Add]))
+            if (options.TryGetFirst(Operation.Add, out var valueAdd))
             {
-                var newRole = AssignNewRole(options[Operation.Add]!);
+                var newRole = AssignNewRole(valueAdd!);
                 userToManage.Role = newRole;
             }
 
-            if (!string.IsNullOrEmpty(options[Operation.Remove]))
+            if (options.TryGetFirst(Operation.Remove, out var valueRemove))
             {
-                var newRole = RemoveNewRole(options[Operation.Remove]!);
+                var newRole = RemoveNewRole(valueRemove!);
                 userToManage.Role = newRole;
             }
 
