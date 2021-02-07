@@ -65,20 +65,20 @@ namespace Patrick.Helpers
 			{
 				var entry = entries.Dequeue();
 				var option = optionList.FirstOrDefault(e => e.Values.Contains(entry));
-				if (option != null)
+				if (option == default)
+					continue;
+
+				var valueList = new List<string?>();
+				while (entries.Count > 0)
 				{
-					var valueList = new List<string?>();
-					while (entries.Count > 0)
-					{
-						entry = entries.Peek();
-						if (string.IsNullOrEmpty(entry) ||
-							optionPrefix.Any(e => entry.StartsWith(e, StringComparison.OrdinalIgnoreCase)))
-							break;
-						valueList.Add(entries.Dequeue());
-					}
-					values[option.Key] = valueList;
-					optionList.Remove(option);
+					entry = entries.Peek();
+					if (string.IsNullOrEmpty(entry) ||
+						optionPrefix.Any(e => entry.StartsWith(e, StringComparison.OrdinalIgnoreCase)))
+						break;
+					valueList.Add(entries.Dequeue());
 				}
+				values[option.Key] = valueList;
+				optionList.Remove(option);
 			}
 			return new OptionResult<TKey>(values);
 		}
