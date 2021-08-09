@@ -21,7 +21,7 @@ Create your config.json under `/Patrick` directory and set the file property `Co
                         "CommandIcon": "https://findicons.com/files/icons/127/sleek_xp_software/300/command_prompt.png"
                 }
         },
-        // this one is optional (remove the comment as well)
+        // this one is optional (remove this comment as well)
         "GitHub": {
                 "AppId": "<value>",
                 "ClientId": "<value>",
