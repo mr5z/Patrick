@@ -1,8 +1,8 @@
-## The retarded Patrick bot
+# The retarded Patrick bot
 
-## TODO
+#### TODO
 
-Create your config.json under `/Patrick` directory and set the `Copy to output directory` value to "Copy always/if newer"
+Create your config.json under `/Patrick` directory and set the `Copy to output directory` value to `"Copy always/if newer"`
 
 ```js
 {
