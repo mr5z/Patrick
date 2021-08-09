@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Patrick.Commands;
 using Patrick.Enums;
 using Patrick.Models;
+using Patrick.Models.Events;
 using Patrick.Models.Implementation;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace Patrick.Services.Implementation
         private readonly IServiceProvider serviceProvider;
         private readonly IUserService userService;
         private readonly IAudioService audioService;
+        private readonly IEventPropagator eventPropagator;
 
         private readonly DiscordSocketClient socketClient = new DiscordSocketClient();
         private readonly Color preferredColor = new Color(255, 144, 148);
@@ -33,12 +35,14 @@ namespace Patrick.Services.Implementation
             ICommandParser commandParser,
             IServiceCollection serviceCollection,
             IUserService userService,
-            IAudioService audioService)
+            IAudioService audioService,
+            IEventPropagator eventPropagator)
         {
             this.configProvider = configProvider;
             this.commandParser = commandParser;
             this.userService = userService;
             this.audioService = audioService;
+            this.eventPropagator = eventPropagator;
 
             serviceCollection.AddTransient(typeof(CustomCommand));
             serviceProvider = serviceCollection.BuildServiceProvider();
@@ -107,24 +111,21 @@ namespace Patrick.Services.Implementation
             //}
         }
 
-        private static string ToAlternatingCase(string words)
-        {
-            var newWord = new StringBuilder();
-            for(var i = 0;i < words.Length; ++i)
-            {
-                var c = words[i];
-                c = i % 2 == 0 ? char.ToUpper(c) : char.ToLower(c);
-                newWord.Append(c);
-            }
-            return newWord.ToString();
-        }
-
         private async Task MessageReceived(SocketMessage arg)
         {
             if (arg.Author.Id == BotId)
                 return;
 
             var message = arg.Content;
+
+            if (arg.MentionedUsers.Any())
+            {
+                var server = GetServer(arg);
+                var channel = new DiscordChannel(arg.Channel, server);
+                eventPropagator.ReportUserMentionEvent(
+                    new UserMentionEventArgs(arg.Author.Id, arg.MentionedUsers.Select(e => e.Id), channel)
+                );
+            }
 
             if (!message.StartsWith(TriggerText))
                 return;
@@ -143,14 +144,6 @@ namespace Patrick.Services.Implementation
             if (command == null)
             {
                 var result = await arg.Channel.SendMessageAsync(RandomDefaultResponse());
-                //try
-                //{
-                //    await AddReactionText("123", result);
-                //}
-                //catch (Exception ex)
-                //{
-                //    var msg = ex.Message;
-                //}
                 _ = Task.Delay(TimeSpan.FromSeconds(10)).ContinueWith(t => result.DeleteAsync());
                 return;
             }
@@ -211,62 +204,6 @@ namespace Patrick.Services.Implementation
                 _ = Task.Run(() => MessageReceived(arg));
             }
             return Task.CompletedTask;
-        }
-
-        private static async Task AddReactionText(string reactionText, RestUserMessage message)
-        {
-            foreach (var c in reactionText)
-            {
-                if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z')
-                {
-                    var react = LetterToEmoji(c);
-                    await message.AddReactionAsync(new Emoji(react));
-                }
-                else if (c >= '0' && c <= '9')
-                    await message.AddReactionAsync(new Emoji(NumberToEmoji(c - '0')));
-            }
-        }
-
-        private static string NumberToEmoji(int number)
-        {
-            var code = 0x1f100 + number;
-            var result = char.ConvertFromUtf32(code).ToString();
-            return result;
-        }
-
-        private static string LetterToEmoji(char letter)
-        {
-            var dictionary = new Dictionary<char, string>
-            {
-                ['A'] = "\u1F1E6",
-                ['B'] = "\u1F1E7",
-                ['C'] = "\u1F1E8",
-                ['D'] = "\u1F1E9",
-                ['E'] = "\u1F1EA",
-                ['F'] = "\u1F1EB",
-                ['G'] = "\u1F1EC",
-                ['H'] = "\u1F1EE",
-                ['I'] = "\u1F1EF",
-                ['J'] = "\u1F1F0",
-                ['K'] = "\u1F1F1",
-                ['L'] = "\u1F1F2",
-                ['M'] = "\u1F1F3",
-                ['N'] = "\u1F1F4",
-                ['O'] = "\u1F1F5",
-                ['P'] = "\u1F1F6",
-                ['Q'] = "\u1F1F7",
-                ['R'] = "\u1F1F8",
-                ['S'] = "\u1F1F9",
-                ['T'] = "\u1F1FA",
-                ['U'] = "\u1F1FB",
-                ['V'] = "\u1F1FC",
-                ['W'] = "\u1F1FD",
-                ['X'] = "\u1F1FE",
-                ['Y'] = "\u1F200",
-                ['Z'] = "\u1F201"
-            };
-
-            return dictionary[char.ToUpper(letter)];
         }
 
         private async Task RespondToChannel(ISocketMessageChannel channel, CommandResponse response, bool isEmbed)

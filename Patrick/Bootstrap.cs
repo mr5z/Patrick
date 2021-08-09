@@ -15,6 +15,7 @@ namespace Patrick
             var stream = File.OpenRead("config.json");
             var appConfig = await AppConfiguration.LoadFrom(stream);
             var audioService = new AudioService();
+            var eventPropagator = new EventPropagator();
 
             var serviceCollection = new ServiceCollection();
             var serviceProvider = serviceCollection
@@ -24,7 +25,9 @@ namespace Patrick
                 .AddSingleton<IServiceCollection>(_ => serviceCollection)
                 .AddSingleton<IAudioService>(_ => audioService)
                 .AddSingleton<ICommandStore, CommandStore>()
+                .AddSingleton<IAfkStore, AfkStore>()
                 .AddSingleton<IHttpService, HttpService>()
+                .AddSingleton<IEventPropagator>(_ => eventPropagator)
                 .AddTransient<IChatService, DiscordService>()
                 .AddTransient<ICommandParser, CommandParser>()
                 .AddTransient<IUserService, UserService>()

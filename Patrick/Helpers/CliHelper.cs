@@ -36,9 +36,9 @@ namespace Patrick.Helpers
 
 			public bool TryGetFirst(TKey key, out string? value)
             {
-				if (options.TryGetValue(key, out var values) && values != null)
+				if (options.TryGetValue(key, out var list) && list != null)
                 {
-					value = values.First();
+					value = list.FirstOrDefault();
 					return true;
 				}
 				value = null;
@@ -48,9 +48,7 @@ namespace Patrick.Helpers
 
 		public static OptionResult<TKey> ParseOptions<TKey>(string text, params Option<TKey>[] options)
 			where TKey : struct, Enum
-		{
-			return ParseOptions(text, DefaultOptionPrefies, options);
-		}
+			=> ParseOptions(text, DefaultOptionPrefies, options);
 
 		public static OptionResult<TKey> ParseOptions<TKey>(string text, string[] optionPrefix, params Option<TKey>[] options)
 			where TKey : struct, Enum

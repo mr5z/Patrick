@@ -47,10 +47,10 @@ namespace Patrick.Services.Implementation
             return await repository.GetList<IUser>(CollectionName, cancellationToken);
         }
 
-        public Task ClearUsers(CancellationToken cancellationToken)
+        public Task<bool> ClearUsers(CancellationToken _)
         {
-            repository.ClearAll();
-            return Task.CompletedTask;
+            repository.Clear(CollectionName);
+            return Task.FromResult(true);
         }
     }
 }

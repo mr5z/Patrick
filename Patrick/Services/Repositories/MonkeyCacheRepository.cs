@@ -1,5 +1,6 @@
 ﻿using MonkeyCache.SQLite;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,6 +23,12 @@ namespace Patrick.Services.Repositories
 
 		public async Task<IReadOnlyList<string?>> AddList<T>(string collectionName, IEnumerable<T> values, CancellationToken cancellationToken)
 		{
+			if (!values.Any())
+            {
+				Barrel.Current.Add(collectionName, values, Timeout.InfiniteTimeSpan);
+				return Enumerable.Empty<string?>().ToList();
+            }
+
 			var taskList = new List<Task<string?>>();
 			foreach (var value in values)
             {
@@ -51,7 +58,7 @@ namespace Patrick.Services.Repositories
 		public Task<HashSet<T>> GetList<T>(string collectionName, CancellationToken cancellationToken)
 		{
 			var data = Barrel.Current.Get<HashSet<T>>(collectionName);
-			return Task.FromResult(data ?? new HashSet<T>());
+			return Task.FromResult(new HashSet<T>(data ?? Enumerable.Empty<T>()));
 		}
 
 		public void Clear(string collectionName) => Barrel.Current.Empty(collectionName);
