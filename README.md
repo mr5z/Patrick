@@ -2,7 +2,7 @@
 
 #### TODO
 
-Create your config.json under `/Patrick` directory and set the `Copy to output directory` value to `"Copy always/if newer"`
+Create your config.json under `/Patrick` directory and set the file property `Copy to output directory` value to `"Copy always/if newer"`
 
 ```js
 {
