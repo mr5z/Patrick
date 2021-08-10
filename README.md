@@ -12,7 +12,7 @@ Create your config.json under `/Patrick` directory and set the file property `Co
                 "BotId": <insert your bot id here>,
                 "TypingDuration": 0.7,
                 "KnownChannels": [
-                        <insert discord user id here or leave empty>
+                        <insert server's channel id here or leave empty>
                 ],
                 "KnownUsers": [
                         <insert discord user id here or leave empty>
